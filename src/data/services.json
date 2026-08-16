@@ -1,6 +1,6 @@
 {
   "meta": {
-    "disclaimer": "本知識庫各筆資料的驗證狀態不一，請以每筆資料的 verified 欄位為準：verified=true 代表已核對 IBM 官方手冊 outputs/webfetch/rzajqpdf.pdf 與/或 IBM 官方文件網站 https://www.ibm.com/docs/en/i（屬文件比對，非實機測試）；verified=false 代表仍為草稿，尚未核實，且依專案規則不應長期保留在正式收錄清單中。無論何者，正式使用前都建議先在測試機執行確認，OS版本/PTF資訊亦可用 DSPPTF/GO PTF 指令複查。",
+    "disclaimer": "本知識庫內容整理自 IBM 官方文件（IBM i Performance and Query Optimization 手冊與 IBM 官方文件網站 https://www.ibm.com/docs/en/i），提供各項 SQL Service 的最低 OS 版本與 PTF 需求參考，屬文件比對整理，非實機測試結果。實際環境的 OS 版本、PTF 安裝狀況可能因主機而異，正式使用前建議先在測試機執行確認，OS 版本/PTF 資訊也可用 DSPPTF、GO PTF 等指令複查。",
     "lastUpdated": "2026-08-14",
     "maintainedBy": "team"
   },

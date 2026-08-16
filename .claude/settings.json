@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-compound-bash.py\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-dangerous-bash.py\"",
             "args": []
           }
         ]
@@ -30,7 +30,14 @@
       "Bash(python scripts/pdf-search.py *)",
       "Bash(bash scripts/webfetch-escalate.sh *)",
       "Bash(bash scripts/headless-check.sh *)",
-      "Bash(python scripts/roster-mark-added.py *)"
+      "Bash(python scripts/roster-mark-added.py *)",
+      "Bash(npm test *)",
+      "Bash(npm run build)",
+      "Bash(sleep *)",
+      "Bash(where *)",
+      "Bash(python3 scripts/pdf-search.py *)",
+      "Bash(python3 scripts/roster-mark-added.py *)",
+      "Bash"
     ]
   }
 }

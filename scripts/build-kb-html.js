@@ -89,7 +89,31 @@ function buildHtml({ catalog, templates, engineSource }) {
   .chip:hover { border-color: var(--accent); }
   .chip.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .chip.active .dot { background: var(--accent-ink) !important; }
-  .result-count { font-size: 13.5px; color: var(--muted); margin: 10px 0 4px; }
+  .result-count-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0 4px; }
+  .result-count { font-size: 13.5px; color: var(--muted); }
+  .group-controls { display: none; gap: 10px; flex: none; }
+  .group-controls.visible { display: flex; }
+  .group-controls button {
+    background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer;
+    text-decoration: underline; font-family: inherit; padding: 2px;
+  }
+
+  .active-filters { display: none; align-items: center; flex-wrap: wrap; gap: 7px; margin: 10px 0 0; }
+  .active-filters.visible { display: flex; }
+  .active-filters-label { font-size: 12.5px; color: var(--muted); flex: none; }
+  .filter-tag {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--accent-soft); color: var(--ink);
+    border: 1px solid var(--accent); border-radius: 999px; padding: 4px 8px 4px 11px; font-size: 13px;
+  }
+  .filter-tag button {
+    background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1;
+    padding: 0 2px; font-family: inherit;
+  }
+  .filter-tag button:hover { color: var(--warn); }
+  .clear-all-btn {
+    background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer;
+    text-decoration: underline; font-family: inherit; padding: 4px 2px;
+  }
 
   .table-scroll { overflow-x: auto; }
   table.catalog { width: 1440px; max-width: none; table-layout: fixed; border-collapse: collapse; font-size: 15.5px; }
@@ -98,20 +122,28 @@ function buildHtml({ catalog, templates, engineSource }) {
     color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border);
     background: var(--paper); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  tr.group-header { cursor: pointer; }
+  tr.group-header td {
+    padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--paper);
+    font-size: 13.5px; font-weight: 700; color: var(--ink);
+  }
+  tr.group-header .chev { display: inline-block; width: 16px; text-align: center; color: var(--muted); transition: transform 0.15s ease; }
+  tr.group-header.collapsed .chev { transform: rotate(-90deg); }
+  tr.group-header .group-count { color: var(--muted); font-weight: 500; margin-left: 4px; }
   tr.row { cursor: pointer; }
   tr.row td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: break-word; }
   tr.row:hover td { background: var(--surface-alt); }
   tr.row.expanded td { background: var(--accent-soft); }
-  td.col-cat { width: 30px; }
-  .cat-dot { width: 10px; height: 10px; border-radius: 3px; margin-top: 5px; }
-  td.col-name { width: 480px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cat-dot { width: 9px; height: 9px; border-radius: 3px; }
+  td.col-name { width: 510px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .svc-name { font-family: var(--mono); font-size: 14.5px; font-weight: 700; display: flex; align-items: flex-start; gap: 4px; white-space: nowrap; }
-  .svc-cat { font-size: 12.5px; color: var(--muted); margin-top: 2px; white-space: normal; }
+  .svc-req { font-size: 12.5px; color: var(--accent); margin-top: 2px; white-space: normal; }
   td.col-desc { width: 540px; color: var(--ink); white-space: normal; }
   td.col-type { width: 150px; }
   .type-pill {
     display: inline-block; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 600;
-    font-family: var(--mono); border: 1px solid transparent; white-space: nowrap;
+    font-family: var(--mono); white-space: nowrap;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent);
   }
   td.col-action { width: 240px; text-align: right; }
   .chev { display: inline-block; width: 16px; flex: none; text-align: center; color: var(--muted); transition: transform 0.15s ease; }
@@ -215,13 +247,20 @@ function buildHtml({ catalog, templates, engineSource }) {
     <div class="chip-group"><span class="chip-group-label">類型</span><div class="chip-row" id="type-chips"></div></div>
     <div class="chip-group"><span class="chip-group-label">OS版本</span><div class="chip-row" id="version-chips"></div></div>
   </div>
-  <div class="result-count" id="result-count"></div>
+  <div class="active-filters" id="active-filters"></div>
+  <div class="result-count-row">
+    <div class="result-count" id="result-count"></div>
+    <div class="group-controls" id="group-controls">
+      <button type="button" id="expand-all-btn">全部展開</button>
+      <button type="button" id="collapse-all-btn">全部收合</button>
+    </div>
+  </div>
   <div class="table-scroll">
   <table class="catalog">
     <colgroup>
-      <col style="width:30px"><col style="width:480px"><col style="width:540px"><col style="width:150px"><col style="width:240px">
+      <col style="width:510px"><col style="width:540px"><col style="width:150px"><col style="width:240px">
     </colgroup>
-    <thead><tr><th></th><th>Service</th><th>說明</th><th>類型</th><th></th></tr></thead>
+    <thead><tr><th>Service</th><th>說明</th><th>類型</th><th></th></tr></thead>
     <tbody id="service-body"></tbody>
   </table>
   </div>
@@ -299,10 +338,15 @@ ${engineSource}
   var versionChipsEl = document.getElementById('version-chips');
   var backToTopBtn = document.getElementById('back-to-top');
   var resultCountEl = document.getElementById('result-count');
+  var groupControlsEl = document.getElementById('group-controls');
+  var expandAllBtn = document.getElementById('expand-all-btn');
+  var collapseAllBtn = document.getElementById('collapse-all-btn');
+  var activeFiltersEl = document.getElementById('active-filters');
   var disclaimerEl = document.getElementById('disclaimer');
   var activeCategory = '';
   var activeType = '';
   var activeVersion = '';
+  var collapsedGroups = {};
 
   // OS版本清單：依資料裡出現的順序取唯一值(既有資料習慣由新到舊寫，如7.6/7.5/7.4/7.3)，
   // 另外準備一份由舊到新排序的陣列，供「最低需求版本」比對使用。
@@ -339,6 +383,7 @@ ${engineSource}
     if (idx === -1) return false;
     return versionFloorIndex(service) >= idx;
   }
+
 
   disclaimerEl.textContent = '注意：' + ((catalog.meta && catalog.meta.disclaimer) || '本知識庫內容未經人工核實，請以官方文件為準。');
 
@@ -407,7 +452,70 @@ ${engineSource}
       .filter(function (s) { return !activeType || s.type === activeType; })
       .filter(function (s) { return !activeVersion || serviceRequiresAtLeast(s, activeVersion); });
     renderServiceList(list);
+    renderActiveFilters();
     window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function renderActiveFilters() {
+    var tags = [];
+    if (keywordInput.value) {
+      tags.push({ label: '關鍵字：' + keywordInput.value, clear: function () { keywordInput.value = ''; } });
+    }
+    if (activeCategory) {
+      tags.push({ label: '分類：' + activeCategory, clear: function () { activeCategory = ''; renderCategoryChips(); } });
+    }
+    if (activeType) {
+      tags.push({ label: '類型：' + activeType, clear: function () { activeType = ''; renderTypeChips(); } });
+    }
+    if (activeVersion) {
+      tags.push({ label: 'OS版本：' + activeVersion + '+', clear: function () { activeVersion = ''; renderVersionChips(); } });
+    }
+
+    activeFiltersEl.innerHTML = '';
+    if (tags.length === 0) {
+      activeFiltersEl.classList.remove('visible');
+      return;
+    }
+    activeFiltersEl.classList.add('visible');
+
+    var label = document.createElement('span');
+    label.className = 'active-filters-label';
+    label.textContent = '目前篩選：';
+    activeFiltersEl.appendChild(label);
+
+    tags.forEach(function (tag) {
+      var el = document.createElement('span');
+      el.className = 'filter-tag';
+      var text = document.createElement('span');
+      text.textContent = tag.label;
+      el.appendChild(text);
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.textContent = '×';
+      removeBtn.setAttribute('aria-label', '移除此篩選');
+      removeBtn.addEventListener('click', function () {
+        tag.clear();
+        applyFilters();
+      });
+      el.appendChild(removeBtn);
+      activeFiltersEl.appendChild(el);
+    });
+
+    var clearAllBtn = document.createElement('button');
+    clearAllBtn.type = 'button';
+    clearAllBtn.className = 'clear-all-btn';
+    clearAllBtn.textContent = '清除全部';
+    clearAllBtn.addEventListener('click', function () {
+      keywordInput.value = '';
+      activeCategory = '';
+      activeType = '';
+      activeVersion = '';
+      renderCategoryChips();
+      renderTypeChips();
+      renderVersionChips();
+      applyFilters();
+    });
+    activeFiltersEl.appendChild(clearAllBtn);
   }
 
   function buildPtfTableHtml(ptfTable) {
@@ -429,57 +537,102 @@ ${engineSource}
     return html;
   }
 
+  var lastRenderedList = [];
+
+  function appendServiceRows(service) {
+    var row = document.createElement('tr');
+    row.className = 'row';
+    row.innerHTML =
+      '<td class="col-name"><span class="svc-name"><span class="chev">▸</span><span class="svc-name-text">' + escapeHtml(service.name) + '</span></span><span class="svc-req">查看 OS/PTF 需求</span></td>' +
+      '<td class="col-desc">' + escapeHtml(service.description) + '</td>' +
+      '<td class="col-type"><span class="type-pill">' + escapeHtml(service.type) + '</span></td>' +
+      '<td class="col-action"></td>';
+
+    var detailRow = document.createElement('tr');
+    detailRow.className = 'detail-row';
+    var detailInner = document.createElement('div');
+    detailInner.className = 'detail-inner';
+    detailInner.innerHTML = buildDetailHtml(service);
+    var detailTd = document.createElement('td');
+    detailTd.colSpan = 4;
+    detailTd.appendChild(detailInner);
+    detailRow.appendChild(detailTd);
+
+    row.addEventListener('click', function (e) {
+      if (e.target.closest('button')) return;
+      row.classList.toggle('expanded');
+      detailRow.classList.toggle('open');
+    });
+
+    var actionTd = row.querySelector('.col-action');
+    var svcTemplates = templatesForService(service.id);
+    var baseLabel = service.type === 'Procedure' ? '產生CALL指令' : '產生 SQL';
+    svcTemplates.forEach(function (t) {
+      var btn = document.createElement('button');
+      btn.className = 'gen-btn-sm';
+      // 同一個service對到多個模板時，光靠「產生SQL/產生CALL指令」無法分辨每顆按鈕的差異，
+      // 這時把模板描述接在後面消歧義；只有一個模板時維持簡短標籤，避免不必要的長文字。
+      btn.textContent = svcTemplates.length > 1 ? baseLabel + '：' + t.description : baseLabel;
+      btn.title = t.description;
+      btn.addEventListener('click', function () { openDrawer(t, service); });
+      actionTd.appendChild(btn);
+    });
+
+    serviceBody.appendChild(row);
+    serviceBody.appendChild(detailRow);
+  }
+
+  function appendGroupHeader(category, count) {
+    var headerRow = document.createElement('tr');
+    var isCollapsed = !!collapsedGroups[category];
+    headerRow.className = 'group-header' + (isCollapsed ? ' collapsed' : '');
+    var td = document.createElement('td');
+    td.colSpan = 4;
+    td.innerHTML =
+      '<span class="chev">▾</span> ' +
+      '<span class="cat-dot" style="background:' + categoryColor[category] + ';display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>' +
+      escapeHtml(category) + '<span class="group-count">(' + count + ')</span>';
+    headerRow.appendChild(td);
+    headerRow.addEventListener('click', function () {
+      collapsedGroups[category] = !collapsedGroups[category];
+      renderServiceList(lastRenderedList);
+    });
+    serviceBody.appendChild(headerRow);
+  }
+
   function renderServiceList(list) {
+    lastRenderedList = list;
     resultCountEl.textContent = '共 ' + list.length + ' 筆';
     serviceBody.innerHTML = '';
     if (list.length === 0) {
+      groupControlsEl.classList.remove('visible');
       var emptyRow = document.createElement('tr');
-      emptyRow.innerHTML = '<td colspan="5" style="padding:16px 10px;color:var(--muted);">找不到符合的 SQL Service。</td>';
+      emptyRow.innerHTML = '<td colspan="4" style="padding:16px 10px;color:var(--muted);">找不到符合的 SQL Service。</td>';
       serviceBody.appendChild(emptyRow);
       return;
     }
-    list.forEach(function (service) {
-      var row = document.createElement('tr');
-      row.className = 'row';
-      row.innerHTML =
-        '<td class="col-cat"><span class="cat-dot" style="background:' + categoryColor[service.category] + '"></span></td>' +
-        '<td class="col-name"><span class="svc-name"><span class="chev">▸</span><span class="svc-name-text">' + escapeHtml(service.name) + '</span></span><span class="svc-cat">' + escapeHtml(service.category) + '</span></td>' +
-        '<td class="col-desc">' + escapeHtml(service.description) + '</td>' +
-        '<td class="col-type"><span class="type-pill" style="background:' + typeColor[service.type] + '1a;color:' + typeColor[service.type] + ';border-color:' + typeColor[service.type] + '55;">' + escapeHtml(service.type) + '</span></td>' +
-        '<td class="col-action"></td>';
 
-      var detailRow = document.createElement('tr');
-      detailRow.className = 'detail-row';
-      var detailInner = document.createElement('div');
-      detailInner.className = 'detail-inner';
-      detailInner.innerHTML = buildDetailHtml(service);
-      var detailTd = document.createElement('td');
-      detailTd.colSpan = 5;
-      detailTd.appendChild(detailInner);
-      detailRow.appendChild(detailTd);
+    // 只有在未鎖定單一分類時才分組——鎖定分類後畫面本來就只剩一個分類，分組標題反而多餘，
+    // 全部展開/收合按鈕也只在有分組時才有意義。
+    if (activeCategory) {
+      groupControlsEl.classList.remove('visible');
+      list.forEach(appendServiceRows);
+      return;
+    }
+    groupControlsEl.classList.add('visible');
 
-      row.addEventListener('click', function (e) {
-        if (e.target.closest('button')) return;
-        row.classList.toggle('expanded');
-        detailRow.classList.toggle('open');
-      });
-
-      var actionTd = row.querySelector('.col-action');
-      var svcTemplates = templatesForService(service.id);
-      var baseLabel = service.type === 'Procedure' ? '產生CALL指令' : '產生 SQL';
-      svcTemplates.forEach(function (t) {
-        var btn = document.createElement('button');
-        btn.className = 'gen-btn-sm';
-        // 同一個service對到多個模板時，光靠「產生SQL/產生CALL指令」無法分辨每顆按鈕的差異，
-        // 這時把模板描述接在後面消歧義；只有一個模板時維持簡短標籤，避免不必要的長文字。
-        btn.textContent = svcTemplates.length > 1 ? baseLabel + '：' + t.description : baseLabel;
-        btn.title = t.description;
-        btn.addEventListener('click', function () { openDrawer(t, service); });
-        actionTd.appendChild(btn);
-      });
-
-      serviceBody.appendChild(row);
-      serviceBody.appendChild(detailRow);
+    var byCategory = {};
+    list.forEach(function (s) {
+      if (!byCategory[s.category]) byCategory[s.category] = [];
+      byCategory[s.category].push(s);
+    });
+    Object.keys(categoryColor).forEach(function (category) {
+      var items = byCategory[category];
+      if (!items || items.length === 0) return;
+      appendGroupHeader(category, items.length);
+      if (!collapsedGroups[category]) {
+        items.forEach(appendServiceRows);
+      }
     });
   }
 
@@ -656,6 +809,15 @@ ${engineSource}
   }
 
   keywordInput.addEventListener('input', applyFilters);
+
+  expandAllBtn.addEventListener('click', function () {
+    Object.keys(categoryColor).forEach(function (category) { collapsedGroups[category] = false; });
+    renderServiceList(lastRenderedList);
+  });
+  collapseAllBtn.addEventListener('click', function () {
+    Object.keys(categoryColor).forEach(function (category) { collapsedGroups[category] = true; });
+    renderServiceList(lastRenderedList);
+  });
 
   renderCategoryChips();
   renderTypeChips();

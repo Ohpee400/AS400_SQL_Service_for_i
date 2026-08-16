@@ -5,6 +5,7 @@ outputs/webfetch/rzajqpdf.pdf
 
 # 暫存/稽核用檔案
 .claude/bash-audit.log
+.claude/settings.local.json
 temp/
 
 # OS雜項
