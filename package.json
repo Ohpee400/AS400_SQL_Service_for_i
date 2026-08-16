@@ -1,0 +1,13 @@
+{
+  "name": "as400-sql-service-toolkit",
+  "version": "0.2.0",
+  "description": "IBM i (AS400) SQL Services 知識庫與 SQL 產生工具（本機靜態網頁）",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/unit/*.test.js",
+    "build": "node scripts/build-kb-html.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

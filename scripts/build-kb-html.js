@@ -1,0 +1,690 @@
+#!/usr/bin/env node
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..');
+const SERVICES_PATH = path.join(ROOT, 'src', 'data', 'services.json');
+const TEMPLATES_PATH = path.join(ROOT, 'src', 'data', 'templates.json');
+const ENGINE_PATH = path.join(ROOT, 'src', 'lib', 'kbEngine.js');
+const OUTPUT_PATH = path.join(ROOT, 'outputs', 'kb.html');
+
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+// 避免資料字串裡若出現 </script> 之類的內容意外提前結束 <script> 標籤
+function safeEmbed(value) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
+function buildHtml({ catalog, templates, engineSource }) {
+  return `<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AS400 SQL Service 知識庫</title>
+<style>
+  :root {
+    --ink: #17222d;
+    --muted: #55677a;
+    --paper: #eef1f6;
+    --surface: #ffffff;
+    --surface-alt: #f4f7fa;
+    --border: #d7dee6;
+    --border-strong: #c1cbd6;
+    --accent: #0e5c73;
+    --accent-ink: #ffffff;
+    --accent-soft: #d9ecf1;
+    --error: #b3261e;
+    --error-bg: #fdecea;
+    --warn: #8a4a00;
+    --warn-bg: #fbeee0;
+    --shadow: rgba(23, 34, 45, 0.10);
+    --mono: Consolas, "Cascadia Code", "SFMono-Regular", Menlo, monospace;
+    --sans: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scrollbar-gutter: stable; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    font-size: 16px;
+  }
+  header { padding: 22px 28px 16px; max-width: 1500px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 27px; letter-spacing: -0.01em; }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+  main { max-width: 1500px; margin: 0 auto; padding: 0 28px 60px; }
+  .toolbar {
+    position: sticky; top: 0; z-index: 5; background: var(--paper);
+    padding: 12px 0 10px; display: flex; flex-wrap: wrap; gap: 10px 14px;
+    align-items: center; border-bottom: 1px solid var(--border);
+  }
+  .search-wrap { position: relative; flex: 1 1 260px; }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.55; }
+  #keyword-input {
+    width: 100%; padding: 11px 12px 11px 36px; border: 1px solid var(--border-strong);
+    border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 16px; font-family: inherit;
+  }
+  #keyword-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .chip-group { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .chip-group-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); flex: none;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border-strong); border-radius: 999px; padding: 7px 13px 7px 10px;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .chip.chip-type { border-radius: 6px; }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .chip.chip-type .dot { border-radius: 3px; }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .chip.active .dot { background: var(--accent-ink) !important; }
+  .result-count { font-size: 13.5px; color: var(--muted); margin: 10px 0 4px; }
+
+  .table-scroll { overflow-x: auto; }
+  table.catalog { width: 1440px; max-width: none; table-layout: fixed; border-collapse: collapse; font-size: 15.5px; }
+  table.catalog thead th {
+    text-align: left; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border);
+    background: var(--paper); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  tr.row { cursor: pointer; }
+  tr.row td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: break-word; }
+  tr.row:hover td { background: var(--surface-alt); }
+  tr.row.expanded td { background: var(--accent-soft); }
+  td.col-cat { width: 30px; }
+  .cat-dot { width: 10px; height: 10px; border-radius: 3px; margin-top: 5px; }
+  td.col-name { width: 480px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .svc-name { font-family: var(--mono); font-size: 14.5px; font-weight: 700; display: flex; align-items: flex-start; gap: 4px; white-space: nowrap; }
+  .svc-cat { font-size: 12.5px; color: var(--muted); margin-top: 2px; white-space: normal; }
+  td.col-desc { width: 540px; color: var(--ink); white-space: normal; }
+  td.col-type { width: 150px; }
+  .type-pill {
+    display: inline-block; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 600;
+    font-family: var(--mono); border: 1px solid transparent; white-space: nowrap;
+  }
+  td.col-action { width: 240px; text-align: right; }
+  .chev { display: inline-block; width: 16px; flex: none; text-align: center; color: var(--muted); transition: transform 0.15s ease; }
+  tr.row.expanded .chev { transform: rotate(90deg); color: var(--accent); }
+  button.gen-btn-sm {
+    display: block; margin-left: auto; max-width: 220px;
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 6px;
+    padding: 8px 13px; font-size: 14px; font-family: inherit; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  button.gen-btn-sm + button.gen-btn-sm { margin-top: 6px; }
+  button.gen-btn-sm:hover { opacity: 0.9; }
+  tr.detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
+  .detail-inner { display: none; padding: 12px 16px 16px 38px; background: var(--surface-alt); font-size: 14px; }
+  tr.detail-row.open .detail-inner { display: block; }
+  .spec-label { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.03em; margin-right: 8px; }
+  table.ptf { border-collapse: collapse; margin-top: 8px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  table.ptf th, table.ptf td { text-align: left; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--border); }
+  table.ptf th { color: var(--muted); font-weight: 600; font-size: 12px; white-space: nowrap; }
+  table.ptf td.not-base { color: var(--warn); font-weight: 600; }
+  .action-warning {
+    font-size: 13px; color: var(--warn); background: var(--warn-bg);
+    border-left: 3px solid var(--warn); padding: 7px 11px; margin: 8px 0 0; border-radius: 4px;
+  }
+
+  .back-to-top {
+    position: fixed; right: 24px; bottom: 24px; width: 44px; height: 44px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink); border: none; box-shadow: 0 4px 14px var(--shadow);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: translateY(8px); pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease; z-index: 15;
+  }
+  .back-to-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .back-to-top:hover { opacity: 0.9; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(10, 16, 22, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; z-index: 20; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(500px, 100vw);
+    background: var(--surface); box-shadow: -8px 0 24px var(--shadow);
+    transform: translateX(100%); transition: transform 0.2s ease; z-index: 21; display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .drawer-head h3 { margin: 0 0 4px; font-size: 17px; font-family: var(--mono); }
+  .drawer-head p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .drawer-close { background: none; border: none; font-size: 22px; color: var(--muted); cursor: pointer; line-height: 1; }
+  .drawer-body { padding: 14px 20px; overflow-y: auto; flex: 1; }
+  .field-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .field-row:last-child { border-bottom: none; }
+  .field-row label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .field-row input, .field-row select {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border-strong);
+    border-radius: 6px; background: var(--paper); color: var(--ink); font-size: 14.5px; font-family: inherit;
+  }
+  .adv-toggle { background: none; border: none; color: var(--accent); font-size: 14px; padding: 8px 0; cursor: pointer; text-decoration: underline; font-family: inherit; }
+  .adv-fields { display: none; }
+  .adv-fields.open { display: block; }
+  .drawer-actions { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 4px; }
+  .drawer-actions .btn-row { display: flex; gap: 8px; }
+  button.gen-btn {
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 6px;
+    padding: 10px 16px; font-size: 14.5px; font-family: inherit; cursor: pointer;
+  }
+  button.secondary {
+    background: var(--surface); color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 6px; padding: 10px 16px; font-size: 14.5px; cursor: pointer; font-family: inherit;
+  }
+  .validation-msg {
+    display: none; color: var(--error); background: var(--error-bg); border: 1px solid #f3c6c2;
+    border-radius: 6px; padding: 8px 12px; font-size: 13.5px; margin-top: 4px;
+  }
+  .validation-msg.show { display: block; }
+  pre#sql-output {
+    background: #10161c; color: #d7e0ea; padding: 14px; border-radius: 8px;
+    font-family: var(--mono); font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    margin-top: 14px; display: none;
+  }
+  .copy-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  #copy-btn { display: none; }
+  #copy-status { font-size: 13px; display: none; }
+  #copy-status.ok { color: #146c3e; }
+  #copy-status.fail { color: var(--error); }
+  footer#disclaimer {
+    max-width: 1220px; margin: 0 auto; padding: 0 28px 30px; font-size: 12.5px; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>AS400 SQL Service 知識庫</h1>
+  <p>查詢 IBM i SQL Service 所需 OS 版本/PTF，選擇情境並填寫參數即可快速產生可複製的 SQL。</p>
+</header>
+<main>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="keyword-input" type="text" placeholder="搜尋 service 名稱、描述、關鍵字…">
+    </div>
+    <div class="chip-group"><span class="chip-group-label">分類</span><div class="chip-row" id="category-chips"></div></div>
+    <div class="chip-group"><span class="chip-group-label">類型</span><div class="chip-row" id="type-chips"></div></div>
+    <div class="chip-group"><span class="chip-group-label">OS版本</span><div class="chip-row" id="version-chips"></div></div>
+  </div>
+  <div class="result-count" id="result-count"></div>
+  <div class="table-scroll">
+  <table class="catalog">
+    <colgroup>
+      <col style="width:30px"><col style="width:480px"><col style="width:540px"><col style="width:150px"><col style="width:240px">
+    </colgroup>
+    <thead><tr><th></th><th>Service</th><th>說明</th><th>類型</th><th></th></tr></thead>
+    <tbody id="service-body"></tbody>
+  </table>
+  </div>
+</main>
+<button id="back-to-top" class="back-to-top" type="button" aria-label="回到頂部" title="回到頂部">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+</button>
+<footer id="disclaimer"></footer>
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div><h3 id="drawer-title"></h3><p id="drawer-desc"></p></div>
+    <button class="drawer-close" id="drawer-close">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div id="form-fields"></div>
+    <button type="button" class="adv-toggle" id="adv-toggle" hidden></button>
+    <div class="adv-fields" id="adv-fields"></div>
+    <div class="drawer-actions">
+      <div class="validation-msg" id="validation-msg"></div>
+      <div class="btn-row">
+        <button class="gen-btn" id="generate-btn"></button>
+        <button class="secondary" id="reset-btn" type="button">重設為預設值</button>
+      </div>
+    </div>
+    <pre id="sql-output"></pre>
+    <div class="copy-row">
+      <button class="secondary" id="copy-btn"></button>
+      <span id="copy-status"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+${engineSource}
+</script>
+<script>
+(function () {
+  'use strict';
+  var catalog = ${safeEmbed(catalog)};
+  var templates = ${safeEmbed(templates)};
+
+  var CATEGORY_PALETTE = ['#0e5c73', '#7a4fa0', '#b5562f', '#2f7a4f', '#a1547a', '#3f6fae', '#8a7a1f', '#c04545', '#3f8a86'];
+  var categoryColor = {};
+  (function assignColors() {
+    var seen = [];
+    catalog.services.forEach(function (s) { if (seen.indexOf(s.category) === -1) seen.push(s.category); });
+    seen.forEach(function (cat, i) { categoryColor[cat] = CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]; });
+  })();
+
+  // 類型顏色：語意固定（Procedure是唯一會異動系統狀態的類型，用跟action-warning同一色系標示；
+  // 其餘唯讀類型從色盤取色），未來若IBM i Services出現新類型會自動落到色盤，不會沒有顏色可用。
+  var TYPE_COLOR_FIXED = { 'Procedure': '#b5562f' };
+  var TYPE_PALETTE = ['#0e5c73', '#2f7a4f', '#3f6fae', '#7a4fa0', '#3f8a86', '#8a7a1f'];
+  var typeColor = {};
+  (function assignTypeColors() {
+    var seen = [];
+    catalog.services.forEach(function (s) { if (seen.indexOf(s.type) === -1) seen.push(s.type); });
+    var paletteIndex = 0;
+    seen.forEach(function (type) {
+      if (TYPE_COLOR_FIXED[type]) {
+        typeColor[type] = TYPE_COLOR_FIXED[type];
+      } else {
+        typeColor[type] = TYPE_PALETTE[paletteIndex % TYPE_PALETTE.length];
+        paletteIndex += 1;
+      }
+    });
+  })();
+
+  var serviceBody = document.getElementById('service-body');
+  var keywordInput = document.getElementById('keyword-input');
+  var categoryChipsEl = document.getElementById('category-chips');
+  var typeChipsEl = document.getElementById('type-chips');
+  var versionChipsEl = document.getElementById('version-chips');
+  var backToTopBtn = document.getElementById('back-to-top');
+  var resultCountEl = document.getElementById('result-count');
+  var disclaimerEl = document.getElementById('disclaimer');
+  var activeCategory = '';
+  var activeType = '';
+  var activeVersion = '';
+
+  // OS版本清單：依資料裡出現的順序取唯一值(既有資料習慣由新到舊寫，如7.6/7.5/7.4/7.3)，
+  // 另外準備一份由舊到新排序的陣列，供「最低需求版本」比對使用。
+  var versionList = [];
+  (function collectVersions() {
+    catalog.services.forEach(function (s) {
+      (s.ptfTable || []).forEach(function (row) {
+        if (versionList.indexOf(row.version) === -1) versionList.push(row.version);
+      });
+    });
+  })();
+  var versionListAscending = versionList.slice().sort(function (a, b) { return parseFloat(a) - parseFloat(b); });
+
+  // 判斷指定服務在指定OS版本是否可用：該版本原生內建(base)或有Enhanced PTF可用即算支援。
+  function serviceSupportsVersion(service, version) {
+    var row = (service.ptfTable || []).filter(function (r) { return r.version === version; })[0];
+    if (!row) return false;
+    return !!row.base || !!(row.enhanced && String(row.enhanced).trim());
+  }
+
+  // 服務實際最低可用版本(floor)：由舊到新找出第一個可用的版本，回傳它在versionListAscending裡的索引。
+  function versionFloorIndex(service) {
+    for (var i = 0; i < versionListAscending.length; i++) {
+      if (serviceSupportsVersion(service, versionListAscending[i])) return i;
+    }
+    return versionListAscending.length;
+  }
+
+  // 篩選「X以上才能用」：服務的最低可用版本(floor)要落在X(含)之後，也就是這個服務在比X更舊的
+  // 版本裡完全不可用。選越新的版本，篩選範圍越窄；選最舊的版本，因為所有服務至少都從它開始可用，
+  // 篩選結果會等於全部服務。
+  function serviceRequiresAtLeast(service, version) {
+    var idx = versionListAscending.indexOf(version);
+    if (idx === -1) return false;
+    return versionFloorIndex(service) >= idx;
+  }
+
+  disclaimerEl.textContent = '注意：' + ((catalog.meta && catalog.meta.disclaimer) || '本知識庫內容未經人工核實，請以官方文件為準。');
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function templatesForService(serviceId) {
+    return templates.filter(function (t) { return t.serviceId === serviceId; });
+  }
+
+  function renderCategoryChips() {
+    categoryChipsEl.innerHTML = '';
+    Object.keys(categoryColor).forEach(function (category) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip' + (category === activeCategory ? ' active' : '');
+      chip.innerHTML = '<span class="dot" style="background:' + categoryColor[category] + '"></span>' + escapeHtml(category);
+      chip.addEventListener('click', function () {
+        activeCategory = activeCategory === category ? '' : category;
+        renderCategoryChips();
+        applyFilters();
+      });
+      categoryChipsEl.appendChild(chip);
+    });
+  }
+
+  function renderTypeChips() {
+    typeChipsEl.innerHTML = '';
+    Object.keys(typeColor).forEach(function (type) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip chip-type' + (type === activeType ? ' active' : '');
+      chip.innerHTML = '<span class="dot" style="background:' + typeColor[type] + '"></span>' + escapeHtml(type);
+      chip.addEventListener('click', function () {
+        activeType = activeType === type ? '' : type;
+        renderTypeChips();
+        applyFilters();
+      });
+      typeChipsEl.appendChild(chip);
+    });
+  }
+
+  function renderVersionChips() {
+    versionChipsEl.innerHTML = '';
+    versionList.forEach(function (version) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip' + (version === activeVersion ? ' active' : '');
+      chip.textContent = version + '+';
+      chip.addEventListener('click', function () {
+        activeVersion = activeVersion === version ? '' : version;
+        renderVersionChips();
+        applyFilters();
+      });
+      versionChipsEl.appendChild(chip);
+    });
+  }
+
+  function applyFilters() {
+    var byKeyword = KBEngine.search(catalog, keywordInput.value);
+    var list = byKeyword
+      .filter(function (s) { return !activeCategory || s.category === activeCategory; })
+      .filter(function (s) { return !activeType || s.type === activeType; })
+      .filter(function (s) { return !activeVersion || serviceRequiresAtLeast(s, activeVersion); });
+    renderServiceList(list);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function buildPtfTableHtml(ptfTable) {
+    var rows = ptfTable.map(function (row) {
+      var baseCell = row.base
+        ? '<td>Base</td>'
+        : '<td class="not-base">需PTF</td>';
+      return '<tr><td>' + escapeHtml(row.version) + '</td>' + baseCell + '<td>' + escapeHtml(row.enhanced || '') + '</td></tr>';
+    }).join('');
+    return '<table class="ptf"><thead><tr><th>版本</th><th>原生內建</th><th>Enhanced PTF</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function buildDetailHtml(service) {
+    var html = '<span class="spec-label">最低 OS</span>' + escapeHtml(service.minOsVersion);
+    html += buildPtfTableHtml(service.ptfTable);
+    if (service.type === 'Procedure') {
+      html += '<p class="action-warning">⚠ 此為執行動作類指令(CALL)，會異動系統設定，非唯讀查詢，執行前請確認影響範圍。</p>';
+    }
+    return html;
+  }
+
+  function renderServiceList(list) {
+    resultCountEl.textContent = '共 ' + list.length + ' 筆';
+    serviceBody.innerHTML = '';
+    if (list.length === 0) {
+      var emptyRow = document.createElement('tr');
+      emptyRow.innerHTML = '<td colspan="5" style="padding:16px 10px;color:var(--muted);">找不到符合的 SQL Service。</td>';
+      serviceBody.appendChild(emptyRow);
+      return;
+    }
+    list.forEach(function (service) {
+      var row = document.createElement('tr');
+      row.className = 'row';
+      row.innerHTML =
+        '<td class="col-cat"><span class="cat-dot" style="background:' + categoryColor[service.category] + '"></span></td>' +
+        '<td class="col-name"><span class="svc-name"><span class="chev">▸</span><span class="svc-name-text">' + escapeHtml(service.name) + '</span></span><span class="svc-cat">' + escapeHtml(service.category) + '</span></td>' +
+        '<td class="col-desc">' + escapeHtml(service.description) + '</td>' +
+        '<td class="col-type"><span class="type-pill" style="background:' + typeColor[service.type] + '1a;color:' + typeColor[service.type] + ';border-color:' + typeColor[service.type] + '55;">' + escapeHtml(service.type) + '</span></td>' +
+        '<td class="col-action"></td>';
+
+      var detailRow = document.createElement('tr');
+      detailRow.className = 'detail-row';
+      var detailInner = document.createElement('div');
+      detailInner.className = 'detail-inner';
+      detailInner.innerHTML = buildDetailHtml(service);
+      var detailTd = document.createElement('td');
+      detailTd.colSpan = 5;
+      detailTd.appendChild(detailInner);
+      detailRow.appendChild(detailTd);
+
+      row.addEventListener('click', function (e) {
+        if (e.target.closest('button')) return;
+        row.classList.toggle('expanded');
+        detailRow.classList.toggle('open');
+      });
+
+      var actionTd = row.querySelector('.col-action');
+      var svcTemplates = templatesForService(service.id);
+      var baseLabel = service.type === 'Procedure' ? '產生CALL指令' : '產生 SQL';
+      svcTemplates.forEach(function (t) {
+        var btn = document.createElement('button');
+        btn.className = 'gen-btn-sm';
+        // 同一個service對到多個模板時，光靠「產生SQL/產生CALL指令」無法分辨每顆按鈕的差異，
+        // 這時把模板描述接在後面消歧義；只有一個模板時維持簡短標籤，避免不必要的長文字。
+        btn.textContent = svcTemplates.length > 1 ? baseLabel + '：' + t.description : baseLabel;
+        btn.title = t.description;
+        btn.addEventListener('click', function () { openDrawer(t, service); });
+        actionTd.appendChild(btn);
+      });
+
+      serviceBody.appendChild(row);
+      serviceBody.appendChild(detailRow);
+    });
+  }
+
+  function paramDefaultValue(param) {
+    return param.default !== undefined ? param.default : '';
+  }
+
+  function createFieldRow(param, prefill) {
+    var row = document.createElement('div');
+    row.className = 'field-row';
+    var label = document.createElement('label');
+    label.textContent = param.prompt + (param.required ? ' *' : '');
+    row.appendChild(label);
+
+    var value = prefill[param.name] !== undefined ? prefill[param.name] : paramDefaultValue(param);
+    var field;
+    if (param.options) {
+      field = document.createElement('select');
+      param.options.forEach(function (opt) {
+        var optionEl = document.createElement('option');
+        optionEl.value = opt;
+        optionEl.textContent = opt === '' ? '(不篩選)' : opt;
+        field.appendChild(optionEl);
+      });
+    } else {
+      field = document.createElement('input');
+      field.type = param.type === 'datetime-local' ? 'datetime-local' : 'text';
+    }
+    field.dataset.name = param.name;
+    field.dataset.type = param.type || 'text';
+    field.value = value;
+    row.appendChild(field);
+    return row;
+  }
+
+  // ---- drawer / 表單 ----
+  var overlay = document.getElementById('overlay');
+  var drawer = document.getElementById('drawer');
+  var drawerTitle = document.getElementById('drawer-title');
+  var drawerDesc = document.getElementById('drawer-desc');
+  var formFields = document.getElementById('form-fields');
+  var advToggle = document.getElementById('adv-toggle');
+  var advFields = document.getElementById('adv-fields');
+  var generateBtn = document.getElementById('generate-btn');
+  var resetBtn = document.getElementById('reset-btn');
+  var validationMsg = document.getElementById('validation-msg');
+  var sqlOutput = document.getElementById('sql-output');
+  var copyBtn = document.getElementById('copy-btn');
+  var copyStatus = document.getElementById('copy-status');
+
+  function closeDrawer() { overlay.classList.remove('open'); drawer.classList.remove('open'); }
+  document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+
+  function openDrawer(template, service) {
+    var isAction = service.type === 'Procedure';
+    drawerTitle.textContent = service.name;
+    drawerDesc.textContent = template.description;
+    generateBtn.textContent = isAction ? '產生CALL指令' : '產生 SQL';
+    copyBtn.textContent = isAction ? '複製指令' : '複製 SQL';
+    formFields.innerHTML = '';
+    advFields.innerHTML = '';
+    advFields.classList.remove('open');
+    sqlOutput.style.display = 'none';
+    copyBtn.style.display = 'none';
+    copyStatus.style.display = 'none';
+    validationMsg.classList.remove('show');
+
+    var params = template.params || [];
+    var primaryParams = params.filter(function (p) { return !p.advanced; });
+    var advancedParams = params.filter(function (p) { return p.advanced; });
+    primaryParams.forEach(function (param) { formFields.appendChild(createFieldRow(param, {})); });
+    advancedParams.forEach(function (param) { advFields.appendChild(createFieldRow(param, {})); });
+
+    if (advancedParams.length > 0) {
+      advToggle.hidden = false;
+      advToggle.textContent = '顯示更多 ' + advancedParams.length + ' 個進階選項 ▾';
+      advToggle.onclick = function () {
+        var isOpen = advFields.classList.toggle('open');
+        advToggle.textContent = (isOpen ? '收合進階選項 ▴' : '顯示更多 ' + advancedParams.length + ' 個進階選項 ▾');
+      };
+    } else {
+      advToggle.hidden = true;
+    }
+
+    function collectParamValues() {
+      var paramValues = {};
+      formFields.querySelectorAll('input, select').forEach(readInputInto(paramValues));
+      advFields.querySelectorAll('input, select').forEach(readInputInto(paramValues));
+      return paramValues;
+    }
+
+    function readInputInto(paramValues) {
+      return function (inp) {
+        var raw = inp.value.trim();
+        if (inp.dataset.type === 'datetime-local' && raw) {
+          // datetime-local 的原始值一般是 "YYYY-MM-DDTHH:mm"，但若瀏覽器/OS設定讓欄位支援到秒，
+          // 會變成 "YYYY-MM-DDTHH:mm:ss"，用冒號數量判斷，避免無條件補秒造成格式錯誤
+          var colonCount = (raw.match(/:/g) || []).length;
+          var withSeconds = colonCount >= 2 ? raw : raw + ':00';
+          paramValues[inp.dataset.name] = "TIMESTAMP('" + withSeconds.replace('T', ' ') + "')";
+        } else {
+          paramValues[inp.dataset.name] = raw;
+        }
+      };
+    }
+
+    generateBtn.onclick = function () {
+      var paramValues = collectParamValues();
+      var missing = KBEngine.getMissingParams(template, paramValues);
+      if (missing.length > 0) {
+        validationMsg.textContent = '請填寫必填欄位：' + missing.map(function (m) { return m.prompt; }).join('、');
+        validationMsg.classList.add('show');
+        return;
+      }
+      validationMsg.classList.remove('show');
+      var sql = KBEngine.fillTemplate(template, paramValues) + ';';
+      sqlOutput.textContent = KBEngine.formatSql(sql);
+      sqlOutput.style.display = 'block';
+      copyBtn.style.display = 'inline-block';
+      copyStatus.style.display = 'none';
+    };
+
+    resetBtn.onclick = function () {
+      formFields.querySelectorAll('input, select').forEach(function (inp) {
+        var param = params.filter(function (p) { return p.name === inp.dataset.name; })[0];
+        inp.value = param ? paramDefaultValue(param) : '';
+      });
+      advFields.querySelectorAll('input, select').forEach(function (inp) {
+        var param = params.filter(function (p) { return p.name === inp.dataset.name; })[0];
+        inp.value = param ? paramDefaultValue(param) : '';
+      });
+      validationMsg.classList.remove('show');
+      sqlOutput.style.display = 'none';
+      copyBtn.style.display = 'none';
+      copyStatus.style.display = 'none';
+    };
+
+    copyBtn.onclick = function () {
+      var text = sqlOutput.textContent;
+      var copyLabel = isAction ? '複製指令' : '複製 SQL';
+      function showResult(ok) {
+        copyStatus.textContent = ok ? '已複製！' : '複製失敗，請手動選取後複製 (Ctrl+C)';
+        copyStatus.className = ok ? 'ok' : 'fail';
+        copyStatus.style.display = 'inline';
+        setTimeout(function () { copyStatus.style.display = 'none'; }, 2200);
+      }
+      function fallbackCopy() {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          var ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          showResult(ok);
+        } catch (e) {
+          showResult(false);
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { showResult(true); }).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      copyBtn.textContent = copyLabel;
+    };
+
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+  }
+
+  keywordInput.addEventListener('input', applyFilters);
+
+  renderCategoryChips();
+  renderTypeChips();
+  renderVersionChips();
+  renderServiceList(catalog.services);
+
+  window.addEventListener('scroll', function () {
+    backToTopBtn.classList.toggle('visible', window.scrollY > 400);
+  });
+  backToTopBtn.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+</script>
+</body>
+</html>
+`;
+}
+
+function main() {
+  const catalog = readJson(SERVICES_PATH);
+  const templates = readJson(TEMPLATES_PATH);
+  const engineSource = fs.readFileSync(ENGINE_PATH, 'utf8');
+
+  const html = buildHtml({ catalog, templates, engineSource });
+
+  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+  fs.writeFileSync(OUTPUT_PATH, html, 'utf8');
+  console.log(`已產出: ${path.relative(ROOT, OUTPUT_PATH)}`);
+}
+
+main();

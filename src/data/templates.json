@@ -1,0 +1,3324 @@
+[
+  {
+    "id": "object_lock_check",
+    "serviceId": "object_lock_info",
+    "description": "查詢某個 Library/Object 目前是否被鎖定，可依鎖定類型/持有工作反查",
+    "matchKeywords": ["鎖定", "被鎖", "lock", "LOCK", "卡住", "鎖住"],
+    "extract": {
+      "pattern": "([A-Za-z0-9_$#@]+)\\s*/\\s*([A-Za-z0-9_$#@]+)",
+      "groups": ["library", "object"]
+    },
+    "params": [
+      { "name": "library", "prompt": "請輸入 Library 名稱", "required": true, "upper": true },
+      { "name": "object", "prompt": "請輸入 Object 名稱", "required": true, "upper": true },
+      { "name": "objectType", "prompt": "限定物件類型(OBJECT_TYPE)，例如 *FILE，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "lockState", "prompt": "限定鎖定類型", "default": "", "options": ["", "*EXCL", "*EXCLRD", "*SHRNUP", "*SHRRD", "*SHRUPD"], "advanced": true },
+      { "name": "jobName", "prompt": "反查：限定持有鎖定的工作名稱", "default": "", "upper": true, "advanced": true },
+      { "name": "jobUser", "prompt": "反查：限定持有鎖定的使用者", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.OBJECT_LOCK_INFO WHERE SYSTEM_OBJECT_SCHEMA = '{library}' AND SYSTEM_OBJECT_NAME = '{object}' AND (OBJECT_TYPE = '{objectType}' OR '{objectType}' = '') AND (LOCK_STATE = '{lockState}' OR '{lockState}' = '') AND (JOB_NAME = '{jobName}' OR '{jobName}' = '') AND (JOB_USER = '{jobUser}' OR '{jobUser}' = '') ORDER BY LOCK_STATE"
+  },
+  {
+    "id": "job_lock_check",
+    "serviceId": "job_lock_info",
+    "description": "反查某個工作(job)目前鎖定或持有哪些物件的鎖定",
+    "matchKeywords": ["工作鎖定", "job lock", "哪些物件被鎖", "反查鎖定"],
+    "params": [
+      { "name": "jobName", "prompt": "請輸入完整合格工作名稱(格式: 工作編號/使用者/工作名稱)，或輸入 * 查詢目前工作", "required": true, "upper": true },
+      { "name": "internalObjects", "prompt": "是否包含內部系統物件", "default": "NO", "options": ["NO", "YES"], "advanced": true },
+      { "name": "lockCategory", "prompt": "限定鎖定實體類型", "default": "", "options": ["", "EXTERNAL", "EXTERNAL SPACE LOCATION", "INTERNAL", "INTERNAL SPACE LOCATION", "LOCK SPACE", "MEMBER"], "advanced": true },
+      { "name": "lockState", "prompt": "限定鎖定類型", "default": "", "options": ["", "*EXCL", "*EXCLRD", "*SHRNUP", "*SHRRD", "*SHRUPD"], "advanced": true },
+      { "name": "objectLibrary", "prompt": "限定物件所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "objectName", "prompt": "限定物件名稱，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE (QSYS2.JOB_LOCK_INFO(JOB_NAME => '{jobName}', INTERNAL_OBJECTS => '{internalObjects}')) X WHERE (LOCK_CATEGORY = '{lockCategory}' OR '{lockCategory}' = '') AND (LOCK_STATE = '{lockState}' OR '{lockState}' = '') AND (OBJECT_LIBRARY = '{objectLibrary}' OR '{objectLibrary}' = '') AND (OBJECT_NAME = '{objectName}' OR '{objectName}' = '') ORDER BY OBJECT_NAME"
+  },
+  {
+    "id": "record_lock_check",
+    "serviceId": "record_lock_info",
+    "description": "查詢資料表記錄(record)層級的鎖定狀態，可依Library/資料表/鎖定類型/持有工作篩選",
+    "matchKeywords": ["record lock", "記錄鎖定", "更新衝突", "交易卡住", "資料被鎖"],
+    "params": [
+      { "name": "library", "prompt": "限定 Library 名稱，留空查詢全系統", "default": "", "upper": true },
+      { "name": "table", "prompt": "限定資料表名稱，留空查詢全部資料表", "default": "", "upper": true, "advanced": true },
+      { "name": "lockState", "prompt": "限定鎖定類型", "default": "", "options": ["", "READ", "UPDATE", "INTERNAL"] },
+      { "name": "jobName", "prompt": "反查：限定持有鎖定的工作名稱", "default": "", "upper": true, "advanced": true },
+      { "name": "jobUser", "prompt": "反查：限定持有鎖定的使用者", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.RECORD_LOCK_INFO WHERE (SYSTEM_TABLE_SCHEMA = '{library}' OR '{library}' = '') AND (SYSTEM_TABLE_NAME = '{table}' OR '{table}' = '') AND (LOCK_STATE = '{lockState}' OR '{lockState}' = '') AND (JOB_NAME = '{jobName}' OR '{jobName}' = '') AND (JOB_USER = '{jobUser}' OR '{jobUser}' = '') ORDER BY JOB_NAME"
+  },
+  {
+    "id": "add_device_locking_policy_call",
+    "serviceId": "add_device_locking_policy",
+    "description": "將NVMe裝置加入密碼鎖定原則",
+    "matchKeywords": ["加入鎖定原則", "nvme鎖定", "硬碟加密鎖定"],
+    "params": [
+      { "name": "policyPassword", "prompt": "請輸入鎖定原則密碼(16-32字元)", "required": true },
+      { "name": "resourceName", "prompt": "請輸入要加入的NVMe裝置資源名稱，或輸入 *ALL 套用全部符合資格的裝置", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.ADD_DEVICE_LOCKING_POLICY(POLICY_PASSWORD => '{policyPassword}', RESOURCE_NAME => '{resourceName}')"
+  },
+  {
+    "id": "change_device_locking_policy_password",
+    "serviceId": "change_device_locking_policy",
+    "description": "變更NVMe硬碟鎖定原則的密碼",
+    "matchKeywords": ["變更鎖定密碼", "nvme改密碼"],
+    "params": [
+      { "name": "policyPassword", "prompt": "請輸入目前的鎖定原則密碼", "required": true },
+      { "name": "newPolicyPassword", "prompt": "請輸入新的鎖定原則密碼(16-32字元)", "required": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_DEVICE_LOCKING_POLICY(POLICY_PASSWORD => '{policyPassword}', NEW_POLICY_PASSWORD => '{newPolicyPassword}')"
+  },
+  {
+    "id": "change_device_locking_policy_fixup",
+    "serviceId": "change_device_locking_policy",
+    "description": "同步NVMe裝置密碼與Platform KeyStore(FIXUP)，用於 QSYS2.LOCKING_POLICY_INFO 的 PASSWORD_FIXUP_REQUIRED 顯示YES時修復",
+    "matchKeywords": ["fixup", "密碼不同步", "keystore同步"],
+    "params": [],
+    "sqlTemplate": "CALL QSYS2.CHANGE_DEVICE_LOCKING_POLICY(FIXUP => 'YES')"
+  },
+  {
+    "id": "create_locking_policy_call",
+    "serviceId": "create_locking_policy",
+    "description": "建立NVMe硬碟密碼鎖定原則",
+    "matchKeywords": ["建立鎖定原則", "nvme建立密碼"],
+    "params": [
+      { "name": "policyPassword", "prompt": "請輸入初始鎖定原則密碼(16-32字元)", "required": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CREATE_LOCKING_POLICY(POLICY_PASSWORD => '{policyPassword}')"
+  },
+  {
+    "id": "delete_locking_policy_call",
+    "serviceId": "delete_locking_policy",
+    "description": "刪除NVMe硬碟密碼鎖定原則(從所有裝置移除)",
+    "matchKeywords": ["刪除鎖定原則", "nvme刪除密碼"],
+    "params": [
+      { "name": "policyPassword", "prompt": "請輸入目前的鎖定原則密碼", "required": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.DELETE_LOCKING_POLICY(POLICY_PASSWORD => '{policyPassword}')"
+  },
+  {
+    "id": "remove_device_locking_policy_call",
+    "serviceId": "remove_device_locking_policy",
+    "description": "將NVMe裝置從密碼鎖定原則中移除",
+    "matchKeywords": ["移除鎖定原則", "nvme解除鎖定"],
+    "params": [
+      { "name": "policyPassword", "prompt": "請輸入目前的鎖定原則密碼", "required": true },
+      { "name": "resourceName", "prompt": "請輸入要移除的NVMe裝置資源名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.REMOVE_DEVICE_LOCKING_POLICY(POLICY_PASSWORD => '{policyPassword}', RESOURCE_NAME => '{resourceName}')"
+  },
+  {
+    "id": "locking_policy_check",
+    "serviceId": "locking_policy_info",
+    "description": "查詢NVMe裝置目前的鎖定原則狀態，可依裝置資源名稱/是否已加入原則/是否需要密碼同步篩選",
+    "matchKeywords": ["nvme狀態", "鎖定原則查詢", "硬碟加密狀態"],
+    "params": [
+      { "name": "resourceName", "prompt": "限定裝置資源名稱，留空查詢全部", "default": "", "upper": true, "advanced": true },
+      { "name": "underPolicy", "prompt": "是否已加入鎖定原則", "default": "", "options": ["", "NO", "YES"], "advanced": true },
+      { "name": "lockState", "prompt": "鎖定狀態(依官方文件定義)", "default": "", "options": ["", "NO", "YES"], "advanced": true },
+      { "name": "passwordFixupRequired", "prompt": "是否需要密碼同步(FIXUP)", "default": "", "options": ["", "NO", "YES"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT RESOURCE_NAME, SERIAL_NUMBER, TYPE, LOCKING_SUPPORTED, ELIGIBLE_POLICY, UNDER_POLICY, LOCK_STATE, UNLOCK_ATTEMPTS_EXHAUSTED, PASSWORD_FIXUP_REQUIRED FROM QSYS2.LOCKING_POLICY_INFO WHERE (RESOURCE_NAME = '{resourceName}' OR '{resourceName}' = '') AND (UNDER_POLICY = '{underPolicy}' OR '{underPolicy}' = '') AND (LOCK_STATE = '{lockState}' OR '{lockState}' = '') AND (PASSWORD_FIXUP_REQUIRED = '{passwordFixupRequired}' OR '{passwordFixupRequired}' = '')"
+  },
+  {
+    "id": "large_table_check",
+    "serviceId": "systablestat",
+    "description": "查詢資料表大小，可依Library/資料表名稱/最少筆數/大小門檻篩選",
+    "matchKeywords": ["大檔案", "大資料表", "檔案太大", "資料表大小", "table size", "占空間", "佔空間"],
+    "params": [
+      { "name": "library", "prompt": "限定 Library 名稱，留空查詢全系統", "default": "", "upper": true },
+      { "name": "tableName", "prompt": "限定資料表名稱，留空查詢全部資料表", "default": "", "upper": true, "advanced": true },
+      { "name": "minSizeMb", "prompt": "篩選門檻(MB)，直接按 Enter 使用預設值", "default": "0" },
+      { "name": "minRows", "prompt": "篩選門檻(最少筆數)，直接按 Enter 使用預設值", "default": "0", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT TABLE_SCHEMA, TABLE_NAME, NUMBER_ROWS, DATA_SIZE FROM QSYS2.SYSTABLESTAT WHERE (TABLE_SCHEMA = '{library}' OR '{library}' = '') AND (TABLE_NAME = '{tableName}' OR '{tableName}' = '') AND (DATA_SIZE > {minSizeMb} * 1024 * 1024 OR '{minSizeMb}' = '0') AND (NUMBER_ROWS >= {minRows} OR '{minRows}' = '0') ORDER BY DATA_SIZE DESC"
+  },
+  {
+    "id": "large_ifs_check",
+    "serviceId": "ifs_object_statistics",
+    "description": "查詢某個 IFS 目錄下超過指定大小(MB)的檔案",
+    "matchKeywords": ["IFS", "ifs", "目錄", "資料夾", "磁碟空間", "folder", "directory"],
+    "params": [
+      { "name": "path", "prompt": "請輸入起始 IFS 路徑 (例如 /home，大小寫皆可)", "required": true },
+      { "name": "minSizeMb", "prompt": "請輸入篩選門檻(MB)，直接按 Enter 使用預設值", "default": "100" }
+    ],
+    "sqlTemplate": "SELECT PATH_NAME, DATA_SIZE FROM TABLE (QSYS2.IFS_OBJECT_STATISTICS(START_PATH_NAME => '{path}', SUBTREE_DIRECTORIES => 'YES')) X WHERE DATA_SIZE > {minSizeMb} * 1024 * 1024 ORDER BY DATA_SIZE DESC"
+  },
+  {
+    "id": "object_statistics_check",
+    "serviceId": "object_statistics",
+    "description": "查詢Library內物件明細，可依物件類型/名稱/大小門檻篩選，找出佔用空間過大的物件",
+    "matchKeywords": ["物件大小", "object statistics", "佔用空間", "物件明細", "大物件"],
+    "params": [
+      { "name": "objectSchema", "prompt": "限定Library名稱，可用特殊值 *ALLUSR(所有使用者Library)/*ALL/*CURLIB/*LIBL 等", "default": "*ALLUSR", "upper": true },
+      { "name": "objectTypeList", "prompt": "限定物件類型，例如 *FILE *PGM，留空(*ALL)查全部類型", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "objectName", "prompt": "限定物件名稱(可用萬用字元*結尾)，留空查全部", "default": "", "upper": true, "advanced": true },
+      { "name": "minSizeMb", "prompt": "篩選門檻(MB)，直接按 Enter 使用預設值", "default": "0" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE (QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => '{objectSchema}', OBJTYPELIST => '{objectTypeList}', OBJECT_NAME => '{objectName}')) X WHERE (OBJSIZE > {minSizeMb} * 1024 * 1024 OR '{minSizeMb}' = '0') ORDER BY OBJSIZE DESC"
+  },
+  {
+    "id": "save_file_check",
+    "serviceId": "save_file_info",
+    "description": "查詢備份檔(Save File)清單，可依所在Library/來源Library篩選",
+    "matchKeywords": ["save file", "備份檔", "存檔", "savf"],
+    "params": [
+      { "name": "saveFileLibrary", "prompt": "限定備份檔所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "libraryName", "prompt": "限定備份來源Library，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT SAVE_FILE_LIBRARY, SAVE_FILE, SAVE_TIMESTAMP, OBJECTS_SAVED, DATA_COMPRESSED FROM QSYS2.SAVE_FILE_INFO WHERE (SAVE_FILE_LIBRARY = '{saveFileLibrary}' OR '{saveFileLibrary}' = '') AND (LIBRARY_NAME = '{libraryName}' OR '{libraryName}' = '') ORDER BY SAVE_TIMESTAMP DESC"
+  },
+  {
+    "id": "save_file_objects_check",
+    "serviceId": "save_file_objects",
+    "description": "查詢指定備份檔(Save File)內含的物件清單，可依物件名稱/類型篩選",
+    "matchKeywords": ["備份檔內容", "save file objects", "savf內容", "存檔內容"],
+    "params": [
+      { "name": "saveFile", "prompt": "請輸入備份檔(Save File)名稱", "required": true, "upper": true },
+      { "name": "saveFileLibrary", "prompt": "請輸入備份檔所在Library", "required": true, "upper": true },
+      { "name": "objectNameFilter", "prompt": "限定物件名稱(可用萬用字元*結尾)，留空(*ALL)查全部", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "objectTypeFilter", "prompt": "限定物件類型，留空(*ALL)查全部類型", "default": "*ALL", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT LIBRARY_NAME, OBJECT_NAME, OBJECT_TYPE, SAVE_TIMESTAMP, OBJECT_SIZE FROM TABLE (QSYS2.SAVE_FILE_OBJECTS(SAVE_FILE => '{saveFile}', SAVE_FILE_LIBRARY => '{saveFileLibrary}', OBJECT_NAME_FILTER => '{objectNameFilter}', OBJECT_TYPE_FILTER => '{objectTypeFilter}')) X ORDER BY OBJECT_SIZE DESC"
+  },
+  {
+    "id": "sysdiskstat_check",
+    "serviceId": "sysdiskstat",
+    "description": "查詢磁碟機使用率與健康狀態，可依使用率門檻/硬體狀態/ASP編號篩選",
+    "matchKeywords": ["磁碟使用率", "disk使用率", "sysdiskstat", "硬碟狀態", "disk空間"],
+    "params": [
+      { "name": "minPercentUsed", "prompt": "篩選門檻(使用率% 以上)，直接按 Enter 使用預設值", "default": "0" },
+      { "name": "hardwareStatus", "prompt": "限定硬體狀態", "default": "", "options": ["", "ACTIVE", "BUSY", "DEGRADED", "FAILED", "HARDWARE FAILURE", "NOT READY", "PARITY REBUILD", "POWER LOSS", "READ WRITE PROTECTED", "UNKNOWN", "UNPROTECTED", "WRITE PROTECTED"], "advanced": true },
+      { "name": "aspNumber", "prompt": "限定ASP編號，留空不篩選", "default": "", "advanced": true },
+      { "name": "resetStatistics", "prompt": "是否重設統計基準點", "default": "NO", "options": ["NO", "YES"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE (QSYS2.SYSDISKSTAT(RESET_STATISTICS => '{resetStatistics}')) X WHERE (PERCENT_USED >= {minPercentUsed} OR '{minPercentUsed}' = '0') AND (HARDWARE_STATUS = '{hardwareStatus}' OR '{hardwareStatus}' = '') AND (CHAR(ASP_NUMBER) = '{aspNumber}' OR '{aspNumber}' = '') ORDER BY PERCENT_USED DESC"
+  },
+  {
+    "id": "active_job_check",
+    "serviceId": "active_job_info",
+    "description": "查詢作用中工作的CPU使用狀況，可依副系統/工作名稱/使用者/CPU使用率門檻篩選",
+    "matchKeywords": ["作用中工作", "active job", "高cpu", "cpu太高", "工作清單", "佔用資源", "占用資源"],
+    "params": [
+      { "name": "subsystem", "prompt": "副系統名稱(SUBSYSTEM)，留空查詢全部副系統", "default": "", "upper": true },
+      { "name": "jobName", "prompt": "工作名稱，留空查詢全部工作", "default": "", "upper": true, "advanced": true },
+      { "name": "currentUser", "prompt": "目前使用者(CURRENT_USER)，留空查詢全部使用者", "default": "", "upper": true, "advanced": true },
+      { "name": "detailedInfo", "prompt": "詳細程度", "default": "ALL", "options": ["ALL", "NONE", "WORK", "QTEMP", "FULL"], "advanced": true },
+      { "name": "minCpuPercent", "prompt": "篩選門檻(CPU使用率% 以上)，直接按 Enter 使用預設值", "default": "0", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT JOB_NAME, JOB_USER, SUBSYSTEM, CPU_TIME, ELAPSED_CPU_PERCENTAGE FROM TABLE (QSYS2.ACTIVE_JOB_INFO(SUBSYSTEM_LIST_FILTER => '{subsystem}', JOB_NAME_FILTER => '{jobName}', CURRENT_USER_LIST_FILTER => '{currentUser}', DETAILED_INFO => '{detailedInfo}')) X WHERE (ELAPSED_CPU_PERCENTAGE >= {minCpuPercent} OR '{minCpuPercent}' = '0') ORDER BY CPU_TIME DESC"
+  },
+  {
+    "id": "system_status_check",
+    "serviceId": "system_status_info",
+    "description": "查詢系統整體效能狀態(CPU/工作數/記憶體/ASP使用率)",
+    "matchKeywords": ["系統效能", "system status", "cpu使用率", "記憶體", "系統資源", "效能監控"],
+    "params": [],
+    "sqlTemplate": "SELECT TOTAL_JOBS_IN_SYSTEM, MAXIMUM_JOBS_IN_SYSTEM, ACTIVE_JOBS_IN_SYSTEM, CONFIGURED_CPUS, AVERAGE_CPU_RATE, MAIN_STORAGE_SIZE, SYSTEM_ASP_USED, TOTAL_AUXILIARY_STORAGE FROM QSYS2.SYSTEM_STATUS_INFO"
+  },
+  {
+    "id": "journal_check",
+    "serviceId": "journal_info",
+    "description": "查詢日誌(Journal)設定與掛接的接收者，可依程式庫/日誌名稱/接收者/訊息佇列篩選",
+    "matchKeywords": ["日誌", "journal", "journal receiver", "接收者", "稽核日誌"],
+    "params": [
+      { "name": "library", "prompt": "限定 Library 名稱，留空查詢全系統", "default": "", "upper": true },
+      { "name": "journalName", "prompt": "限定日誌(Journal)名稱，留空查詢全部日誌", "default": "", "upper": true, "advanced": true },
+      { "name": "receiverName", "prompt": "限定日誌接收者(RECEIVER)名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "receiverLibrary", "prompt": "限定日誌接收者所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "messageQueue", "prompt": "限定訊息佇列名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "messageQueueLibrary", "prompt": "限定訊息佇列所在Library，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT JOURNAL_NAME, JOURNAL_LIBRARY, ATTACHED_JOURNAL_RECEIVER_NAME, ATTACHED_JOURNAL_RECEIVER_LIBRARY, MESSAGE_QUEUE, MESSAGE_QUEUE_LIBRARY FROM QSYS2.JOURNAL_INFO WHERE (JOURNAL_LIBRARY = '{library}' OR '{library}' = '') AND (JOURNAL_NAME = '{journalName}' OR '{journalName}' = '') AND (ATTACHED_JOURNAL_RECEIVER_NAME = '{receiverName}' OR '{receiverName}' = '') AND (ATTACHED_JOURNAL_RECEIVER_LIBRARY = '{receiverLibrary}' OR '{receiverLibrary}' = '') AND (MESSAGE_QUEUE = '{messageQueue}' OR '{messageQueue}' = '') AND (MESSAGE_QUEUE_LIBRARY = '{messageQueueLibrary}' OR '{messageQueueLibrary}' = '')"
+  },
+  {
+    "id": "associate_journal_receiver_check",
+    "serviceId": "associate_journal_receiver",
+    "description": "重新關聯日誌接收者與日誌，修復association異常",
+    "matchKeywords": ["關聯日誌接收者", "associate journal receiver", "接收者異常"],
+    "params": [
+      { "name": "journalLibrary", "prompt": "請輸入日誌所在Library", "required": true, "upper": true },
+      { "name": "journalName", "prompt": "請輸入日誌名稱", "required": true, "upper": true },
+      { "name": "receiverLibrary", "prompt": "請輸入日誌接收者所在Library", "required": true, "upper": true },
+      { "name": "receiverName", "prompt": "請輸入日誌接收者名稱，可用萬用字元*結尾或*ALL", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.ASSOCIATE_JOURNAL_RECEIVER('{journalLibrary}', '{journalName}', '{receiverLibrary}', '{receiverName}'))"
+  },
+  {
+    "id": "audit_journal_data_mart_info_check",
+    "serviceId": "audit_journal_data_mart_info",
+    "description": "查詢稽核日誌資料超市(data mart)的建置狀態，可依Library/項目類型/只看失敗篩選",
+    "matchKeywords": ["稽核資料超市狀態", "audit journal data mart", "資料超市失敗"],
+    "params": [
+      { "name": "dataMartLibrary", "prompt": "限定資料超市所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "journalEntryType", "prompt": "限定稽核項目類型(例如PW)，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "onlyFailures", "prompt": "只看建置失敗的紀錄", "default": "NO", "options": ["NO", "YES"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUDIT_JOURNAL_DATA_MART_INFO WHERE (DATA_MART_LIBRARY = '{dataMartLibrary}' OR '{dataMartLibrary}' = '') AND (JOURNAL_ENTRY_TYPE = '{journalEntryType}' OR '{journalEntryType}' = '') AND (FAILURE_DETAIL IS NOT NULL OR '{onlyFailures}' = 'NO')"
+  },
+  {
+    "id": "db_transaction_info_check",
+    "serviceId": "db_transaction_info",
+    "description": "查詢交易確認定義(commitment definition)狀態，可依工作/LUW狀態/是否有未確認異動篩選",
+    "matchKeywords": ["交易卡住", "commitment definition", "luw狀態", "rollback異常", "未確認異動"],
+    "params": [
+      { "name": "jobName", "prompt": "限定工作名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "luwState", "prompt": "限定LUW狀態", "default": "", "options": ["", "COMMIT IN PROGRESS", "COMMITTED", "LAST AGENT PENDING", "PREPARE IN PROGRESS", "PREPARED", "RESET", "ROLLBACK IN PROGRESS", "ROLLBACK REQUIRED", "VOTE READ ONLY"], "advanced": true },
+      { "name": "onlyPending", "prompt": "只看有未確認(pending)本地異動的工作", "default": "NO", "options": ["NO", "YES"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.DB_TRANSACTION_INFO WHERE (JOB_NAME = '{jobName}' OR '{jobName}' = '') AND (LOGICAL_UNIT_OF_WORK_STATE = '{luwState}' OR '{luwState}' = '') AND (LOCAL_CHANGES_PENDING = 'YES' OR '{onlyPending}' = 'NO')"
+  },
+  {
+    "id": "db_transaction_journal_info_check",
+    "serviceId": "db_transaction_journal_info",
+    "description": "查詢指定交易(lock space id)的日誌資源認可/回復進度",
+    "matchKeywords": ["交易日誌進度", "db transaction journal", "lock space id"],
+    "params": [
+      { "name": "lockSpaceId", "prompt": "請輸入交易的lock space id", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.DB_TRANSACTION_JOURNAL_INFO('{lockSpaceId}'))"
+  },
+  {
+    "id": "db_transaction_object_info_check",
+    "serviceId": "db_transaction_object_info",
+    "description": "查詢指定交易(lock space id)下異動過的物件清單",
+    "matchKeywords": ["交易異動物件", "db transaction object", "commit定義物件"],
+    "params": [
+      { "name": "lockSpaceId", "prompt": "請輸入交易的lock space id", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.DB_TRANSACTION_OBJECT_INFO('{lockSpaceId}')) ORDER BY ORDINAL_POSITION"
+  },
+  {
+    "id": "db_transaction_record_info_check",
+    "serviceId": "db_transaction_record_info",
+    "description": "查詢指定交易(lock space id)下資料庫檔案的記錄層級認可/回復狀態",
+    "matchKeywords": ["交易記錄狀態", "db transaction record", "記錄層級commit"],
+    "params": [
+      { "name": "lockSpaceId", "prompt": "請輸入交易的lock space id", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.DB_TRANSACTION_RECORD_INFO('{lockSpaceId}'))"
+  },
+  {
+    "id": "display_journal_check",
+    "serviceId": "display_journal",
+    "description": "查詢日誌項目內容(等同SQL版DSPJRN)，可依時間範圍/物件/使用者/工作/程式/代碼與類型篩選",
+    "matchKeywords": ["查日誌內容", "display journal", "dspjrn", "日誌項目", "journal entry"],
+    "params": [
+      { "name": "journalLibrary", "prompt": "請輸入日誌所在Library", "required": true, "upper": true },
+      { "name": "journalName", "prompt": "請輸入日誌名稱", "required": true, "upper": true },
+      { "name": "startingTimestamp", "prompt": "只看此時間點之後的項目，留空=從最早開始", "default": "NULL", "type": "datetime-local", "advanced": true },
+      { "name": "endingTimestamp", "prompt": "只看此時間點之前的項目，留空=到目前為止", "default": "NULL", "type": "datetime-local", "advanced": true },
+      { "name": "journalCodes", "prompt": "限定日誌代碼，留空(*ALL)查全部", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "journalEntryTypes", "prompt": "限定日誌項目類型，留空(*ALL)查全部", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "objectLibrary", "prompt": "限定物件所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "objectName", "prompt": "限定物件名稱，留空(*ALLFILE)不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "objectType", "prompt": "限定物件類型", "default": "", "options": ["", "*DTAARA", "*DTAQ", "*FILE", "*LIB"], "advanced": true },
+      { "name": "user", "prompt": "限定使用者，留空(*ALL)查全部", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "job", "prompt": "限定工作，留空(*ALL)查全部", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "program", "prompt": "限定程式，留空(*ALL)查全部", "default": "*ALL", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE (QSYS2.DISPLAY_JOURNAL(JOURNAL_LIBRARY => '{journalLibrary}', JOURNAL_NAME => '{journalName}', STARTING_TIMESTAMP => {startingTimestamp}, ENDING_TIMESTAMP => {endingTimestamp}, JOURNAL_CODES => '{journalCodes}', JOURNAL_ENTRY_TYPES => '{journalEntryTypes}', OBJECT_LIBRARY => '{objectLibrary}', OBJECT_NAME => '{objectName}', OBJECT_OBJTYPE => '{objectType}', USER => '{user}', JOB => '{job}', PROGRAM => '{program}')) X ORDER BY ENTRY_TIMESTAMP"
+  },
+  {
+    "id": "history_log_info_check",
+    "serviceId": "history_log_info",
+    "description": "查詢系統歷程紀錄(等同SQL版DSPLOG)，可依時間範圍/訊息類型/嚴重度門檻篩選",
+    "matchKeywords": ["歷程紀錄", "history log", "dsplog", "系統訊息記錄", "qhst"],
+    "params": [
+      { "name": "startTime", "prompt": "起始時間，留空=昨天(官方預設CURRENT DATE - 1 DAY)", "default": "CURRENT DATE - 1 DAY", "type": "datetime-local" },
+      { "name": "endTime", "prompt": "結束時間，留空=到目前為止", "default": "TIMESTAMP('9999-12-30-00.00.00.000000')", "type": "datetime-local", "advanced": true },
+      { "name": "messageType", "prompt": "限定訊息類型", "default": "", "options": ["", "COMPLETION", "DIAGNOSTIC", "ESCAPE", "INFORMATIONAL", "INQUIRY", "NOTIFY", "REPLY", "REQUEST", "SENDER"], "advanced": true },
+      { "name": "minSeverity", "prompt": "篩選門檻(嚴重度 至少)，直接按 Enter 使用預設值", "default": "0", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE (QSYS2.HISTORY_LOG_INFO(START_TIME => {startTime}, END_TIME => {endTime})) X WHERE (MESSAGE_TYPE = '{messageType}' OR '{messageType}' = '') AND (SEVERITY >= {minSeverity} OR '{minSeverity}' = '0') ORDER BY ORDINAL_POSITION"
+  },
+  {
+    "id": "journaled_objects_check",
+    "serviceId": "journaled_objects",
+    "description": "查詢已設定日誌的物件清單，可依日誌/Library/物件類型篩選",
+    "matchKeywords": ["已日誌化物件", "journaled objects", "哪些物件有journal"],
+    "params": [
+      { "name": "journalName", "prompt": "限定日誌名稱，留空不篩選", "default": "", "upper": true },
+      { "name": "journalLibrary", "prompt": "限定日誌所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "objectLibrary", "prompt": "限定物件所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "objectName", "prompt": "限定物件名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "objectType", "prompt": "限定物件類型", "default": "", "options": ["", "*DIR", "*DTAARA", "*DTAQ", "*FILE", "*JRNRCV", "*LIB", "*STMF", "*SYMLNK"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.JOURNALED_OBJECTS WHERE (JOURNAL_LIBRARY = '{journalLibrary}' OR '{journalLibrary}' = '') AND (JOURNAL_NAME = '{journalName}' OR '{journalName}' = '') AND (OBJECT_LIBRARY = '{objectLibrary}' OR '{objectLibrary}' = '') AND (OBJECT_NAME = '{objectName}' OR '{objectName}' = '') AND (OBJECT_TYPE = '{objectType}' OR '{objectType}' = '') ORDER BY OBJECT_TYPE, OBJECT_LIBRARY, OBJECT_NAME"
+  },
+  {
+    "id": "journal_code_info_check",
+    "serviceId": "journal_code_info",
+    "description": "查詢日誌代碼與日誌項目類型的文字說明，可依代碼/類型篩選",
+    "matchKeywords": ["日誌代碼說明", "journal code info", "日誌代碼意思", "entry type說明"],
+    "params": [
+      { "name": "journalCode", "prompt": "限定日誌代碼，留空查全部", "default": "", "upper": true },
+      { "name": "journalEntryType", "prompt": "限定日誌項目類型，留空查全部", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.JOURNAL_CODE_INFO WHERE (JOURNAL_CODE = '{journalCode}' OR '{journalCode}' = '') AND (JOURNAL_ENTRY_TYPE = '{journalEntryType}' OR '{journalEntryType}' = '')"
+  },
+  {
+    "id": "journal_inherit_rules_check",
+    "serviceId": "journal_inherit_rules",
+    "description": "查詢Library的日誌繼承規則，可依Library/物件類型/規則動作篩選",
+    "matchKeywords": ["日誌繼承規則", "journal inherit rules", "新物件自動加journal"],
+    "params": [
+      { "name": "libraryName", "prompt": "限定Library名稱，留空查全部", "default": "", "upper": true },
+      { "name": "objectType", "prompt": "限定物件類型", "default": "", "options": ["", "*ALL", "*DTAARA", "*DTAQ", "*FILE"], "advanced": true },
+      { "name": "ruleAction", "prompt": "限定規則動作", "default": "", "options": ["", "*INCLUDE", "*OMIT"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.JOURNAL_INHERIT_RULES WHERE (LIBRARY_NAME = '{libraryName}' OR '{libraryName}' = '') AND (OBJECT_TYPE = '{objectType}' OR '{objectType}' = '') AND (RULE_ACTION = '{ruleAction}' OR '{ruleAction}' = '') ORDER BY LIBRARY_NAME, ORDINAL_POSITION"
+  },
+  {
+    "id": "journal_receiver_info_check",
+    "serviceId": "journal_receiver_info",
+    "description": "查詢日誌接收者狀態與大小，可依Library/日誌/狀態/大小門檻篩選",
+    "matchKeywords": ["日誌接收者狀態", "journal receiver info", "接收者大小", "接收者清理"],
+    "params": [
+      { "name": "journalLibrary", "prompt": "限定所屬日誌的Library，留空不篩選", "default": "", "upper": true },
+      { "name": "journalReceiverLibrary", "prompt": "限定接收者所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "journalName", "prompt": "限定所屬日誌名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "status", "prompt": "限定接收者狀態", "default": "", "options": ["", "ATTACHED", "ONLINE", "SAVED", "FREED", "PARTIAL", "EMPTY"], "advanced": true },
+      { "name": "minSizeMb", "prompt": "篩選門檻(MB)，直接按 Enter 使用預設值", "default": "0" }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.JOURNAL_RECEIVER_INFO WHERE (JOURNAL_RECEIVER_LIBRARY = '{journalReceiverLibrary}' OR '{journalReceiverLibrary}' = '') AND (JOURNAL_LIBRARY = '{journalLibrary}' OR '{journalLibrary}' = '') AND (JOURNAL_NAME = '{journalName}' OR '{journalName}' = '') AND (STATUS = '{status}' OR '{status}' = '') AND (SIZE > {minSizeMb} * 1024 OR '{minSizeMb}' = '0') ORDER BY SIZE DESC"
+  },
+  {
+    "id": "manage_audit_journal_data_mart_call",
+    "serviceId": "manage_audit_journal_data_mart",
+    "description": "建立/更新/刪除稽核日誌資料超市資料表",
+    "matchKeywords": ["建立稽核資料超市", "manage audit journal data mart", "稽核日誌轉表"],
+    "params": [
+      { "name": "journalEntryType", "prompt": "請輸入稽核項目類型(例如PW密碼、AF存取失敗)", "required": true, "upper": true },
+      { "name": "dataMartLibrary", "prompt": "請輸入資料超市所在/要建立的Library", "required": true, "upper": true },
+      { "name": "dataMartAction", "prompt": "動作", "default": "CREATE", "options": ["CREATE", "ADD", "DROP", "REPLACE"] },
+      { "name": "startingTimestamp", "prompt": "起始時間(留空=依動作使用官方預設，或輸入SQL時間運算式如 CURRENT DATE - 1 MONTH)", "default": "CURRENT DATE - 1 MONTH", "advanced": true },
+      { "name": "endingTimestamp", "prompt": "結束時間", "default": "CURRENT_TIMESTAMP", "advanced": true },
+      { "name": "dataMartFilter", "prompt": "篩選條件(SQL述詞字串，套用在AUDIT_JOURNAL_xx的欄位上)，留空不篩選", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.MANAGE_AUDIT_JOURNAL_DATA_MART(JOURNAL_ENTRY_TYPE => '{journalEntryType}', DATA_MART_LIBRARY => '{dataMartLibrary}', STARTING_TIMESTAMP => {startingTimestamp}, ENDING_TIMESTAMP => {endingTimestamp}, DATA_MART_ACTION => '{dataMartAction}', DATA_MART_FILTER => '{dataMartFilter}')"
+  },
+  {
+    "id": "create_data_journal_reader_call",
+    "serviceId": "create_data_journal_reader",
+    "description": "建立資料日誌讀取器table function",
+    "matchKeywords": ["建立資料日誌讀取器", "create data journal reader", "data journal reader", "讀取journal record異動"],
+    "params": [
+      { "name": "libraryName", "prompt": "請輸入來源資料表所在的Library", "required": true, "upper": true },
+      { "name": "fileName", "prompt": "請輸入來源資料表名稱(須已開啟journaling)", "required": true, "upper": true },
+      { "name": "outputLibrary", "prompt": "請輸入要建立table function的目的Library(須已存在)", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "VALUES QSYS2.CREATE_DATA_JOURNAL_READER(LIBRARY_NAME => '{libraryName}', FILE_NAME => '{fileName}', OUTPUT_LIBRARY => '{outputLibrary}')"
+  },
+  {
+    "id": "remote_journal_info_check",
+    "serviceId": "remote_journal_info",
+    "description": "查詢遠端日誌(Remote Journal)資訊與傳送狀態，可依來源日誌/狀態/目標資料庫篩選",
+    "matchKeywords": ["遠端日誌狀態", "remote journal info", "日誌複寫", "journal複寫異常"],
+    "params": [
+      { "name": "sourceJournal", "prompt": "限定來源日誌名稱，留空查全部", "default": "", "upper": true },
+      { "name": "sourceJournalLibrary", "prompt": "限定來源日誌所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "remoteJournalState", "prompt": "限定遠端日誌狀態", "default": "", "options": ["", "ACTIVE", "CTLINACT", "FAILED", "INACTIVE", "PENDING"], "advanced": true },
+      { "name": "remoteDatabaseName", "prompt": "限定目標資料庫(RDB)名稱，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.REMOTE_JOURNAL_INFO WHERE (SOURCE_JOURNAL_LIBRARY = '{sourceJournalLibrary}' OR '{sourceJournalLibrary}' = '') AND (SOURCE_JOURNAL = '{sourceJournal}' OR '{sourceJournal}' = '') AND (REMOTE_JOURNAL_STATE = '{remoteJournalState}' OR '{remoteJournalState}' = '') AND (REMOTE_DATABASE_NAME = '{remoteDatabaseName}' OR '{remoteDatabaseName}' = '')"
+  },
+  {
+    "id": "authority_collection_check",
+    "serviceId": "authority_collection",
+    "description": "查詢使用者授權收集明細，可依使用者/物件名稱/物件所在Library/授權檢查結果篩選",
+    "matchKeywords": ["authority collection", "授權收集", "使用者授權收集", "authority check", "授權檢查明細"],
+    "params": [
+      { "name": "authorizationName", "prompt": "限定使用者(AUTHORIZATION_NAME)，留空查詢全部", "default": "", "upper": true },
+      { "name": "systemObjectName", "prompt": "限定物件名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "systemObjectSchema", "prompt": "限定物件所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "authorityCheckSuccessful", "prompt": "只看授權檢查結果", "default": "", "options": ["", "1", "0"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUTHORITY_COLLECTION WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (SYSTEM_OBJECT_NAME = '{systemObjectName}' OR '{systemObjectName}' = '') AND (SYSTEM_OBJECT_SCHEMA = '{systemObjectSchema}' OR '{systemObjectSchema}' = '') AND (AUTHORITY_CHECK_SUCCESSFUL = '{authorityCheckSuccessful}' OR '{authorityCheckSuccessful}' = '')"
+  },
+  {
+    "id": "authority_collection_dlo_check",
+    "serviceId": "authority_collection_dlo",
+    "description": "查詢文件庫物件(DLO)授權收集明細，可依使用者/物件名稱篩選",
+    "matchKeywords": ["dlo授權收集", "authority collection dlo", "文件庫物件授權"],
+    "params": [
+      { "name": "authorizationName", "prompt": "限定使用者(AUTHORIZATION_NAME)，留空查詢全部", "default": "", "upper": true },
+      { "name": "systemObjectName", "prompt": "限定DLO物件名稱，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUTHORITY_COLLECTION_DLO WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (SYSTEM_OBJECT_NAME = '{systemObjectName}' OR '{systemObjectName}' = '')"
+  },
+  {
+    "id": "authority_collection_fsobj_check",
+    "serviceId": "authority_collection_fsobj",
+    "description": "查詢檔案系統物件授權收集明細，可依使用者/路徑篩選",
+    "matchKeywords": ["fsobj授權收集", "authority collection fsobj", "檔案系統授權收集", "ifs授權檢查"],
+    "params": [
+      { "name": "authorizationName", "prompt": "限定使用者(AUTHORIZATION_NAME)，留空查詢全部", "default": "", "upper": true },
+      { "name": "pathName", "prompt": "限定路徑名稱關鍵字(模糊比對)，留空不篩選", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUTHORITY_COLLECTION_FSOBJ WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (PATH_NAME LIKE '%{pathName}%' OR '{pathName}' = '')"
+  },
+  {
+    "id": "authority_collection_ifs_check",
+    "serviceId": "authority_collection_ifs",
+    "description": "查詢檔案系統物件授權收集(精簡版)，可依使用者/路徑篩選",
+    "matchKeywords": ["ifs授權收集精簡", "authority collection ifs"],
+    "params": [
+      { "name": "authorizationName", "prompt": "限定使用者(AUTHORIZATION_NAME)，留空查詢全部", "default": "", "upper": true },
+      { "name": "pathName", "prompt": "限定路徑名稱關鍵字(模糊比對)，留空不篩選", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUTHORITY_COLLECTION_IFS WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (PATH_NAME LIKE '%{pathName}%' OR '{pathName}' = '')"
+  },
+  {
+    "id": "authority_collection_libraries_check",
+    "serviceId": "authority_collection_libraries",
+    "description": "查詢程式庫與程式庫內物件授權收集明細(適合看全部/大部分物件)，可依使用者/物件/Library篩選",
+    "matchKeywords": ["libraries授權收集", "authority collection libraries", "程式庫授權收集"],
+    "params": [
+      { "name": "authorizationName", "prompt": "限定使用者(AUTHORIZATION_NAME)，留空查詢全部", "default": "", "upper": true },
+      { "name": "systemObjectName", "prompt": "限定物件名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "systemObjectSchema", "prompt": "限定物件所在Library，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUTHORITY_COLLECTION_LIBRARIES WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (SYSTEM_OBJECT_NAME = '{systemObjectName}' OR '{systemObjectName}' = '') AND (SYSTEM_OBJECT_SCHEMA = '{systemObjectSchema}' OR '{systemObjectSchema}' = '')"
+  },
+  {
+    "id": "authority_collection_object_check",
+    "serviceId": "authority_collection_object",
+    "description": "查詢程式庫與程式庫內物件授權收集明細(適合鎖定特定物件/Library查詢)，可依使用者/物件/Library篩選",
+    "matchKeywords": ["object授權收集", "authority collection object", "物件授權收集"],
+    "params": [
+      { "name": "systemObjectSchema", "prompt": "限定物件所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "systemObjectName", "prompt": "限定物件名稱，留空不篩選", "default": "", "upper": true },
+      { "name": "authorizationName", "prompt": "限定使用者(AUTHORIZATION_NAME)，留空查詢全部", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUTHORITY_COLLECTION_OBJECT WHERE (SYSTEM_OBJECT_SCHEMA = '{systemObjectSchema}' OR '{systemObjectSchema}' = '') AND (SYSTEM_OBJECT_NAME = '{systemObjectName}' OR '{systemObjectName}' = '') AND (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '')"
+  },
+  {
+    "id": "authorization_list_info_check",
+    "serviceId": "authorization_list_info",
+    "description": "查詢被authorization list保護的所有物件，可依授權清單名稱/物件所在Library/物件類型篩選",
+    "matchKeywords": ["authorization list物件", "授權清單保護物件", "dspautlobj", "authorization list info"],
+    "params": [
+      { "name": "authorizationList", "prompt": "限定授權清單名稱，留空查詢全部", "default": "", "upper": true },
+      { "name": "systemObjectSchema", "prompt": "限定物件所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "systemObjectType", "prompt": "限定物件類型，例如 *FILE，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUTHORIZATION_LIST_INFO WHERE (AUTHORIZATION_LIST = '{authorizationList}' OR '{authorizationList}' = '') AND (SYSTEM_OBJECT_SCHEMA = '{systemObjectSchema}' OR '{systemObjectSchema}' = '') AND (SYSTEM_OBJECT_TYPE = '{systemObjectType}' OR '{systemObjectType}' = '')"
+  },
+  {
+    "id": "authorization_list_user_info_check",
+    "serviceId": "authorization_list_user_info",
+    "description": "查詢authorization list裡各使用者的授權設定，可依授權清單/使用者/授權等級篩選",
+    "matchKeywords": ["authorization list使用者", "dspautl", "授權清單使用者", "authorization list user info"],
+    "params": [
+      { "name": "authorizationList", "prompt": "限定授權清單名稱，留空查詢全部", "default": "", "upper": true },
+      { "name": "authorizationName", "prompt": "限定使用者(可用*PUBLIC查公開授權)，留空不篩選", "default": "", "upper": true },
+      { "name": "objectAuthority", "prompt": "限定授權等級", "default": "", "options": ["", "*ALL", "*CHANGE", "*USE", "*EXCLUDE"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.AUTHORIZATION_LIST_USER_INFO WHERE (AUTHORIZATION_LIST = '{authorizationList}' OR '{authorizationList}' = '') AND (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (OBJECT_AUTHORITY = '{objectAuthority}' OR '{objectAuthority}' = '')"
+  },
+  {
+    "id": "certificate_info_call",
+    "serviceId": "certificate_info",
+    "description": "查詢憑證存放區裡的憑證資訊",
+    "matchKeywords": ["查詢憑證", "certificate info", "數位憑證資訊", "憑證到期"],
+    "params": [
+      { "name": "certificateStorePassword", "prompt": "請輸入憑證存放區密碼", "required": true },
+      { "name": "certificateStore", "prompt": "憑證存放區(留空預設*SYSTEM)", "default": "*SYSTEM", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT SUBJECT_COMMON_NAME, VALID_FROM, VALID_TO FROM TABLE(QSYS2.CERTIFICATE_INFO(CERTIFICATE_STORE_PASSWORD => '{certificateStorePassword}', CERTIFICATE_STORE => '{certificateStore}')) X"
+  },
+  {
+    "id": "certificate_usage_info_check",
+    "serviceId": "certificate_usage_info",
+    "description": "查詢應用程式的TLS/SSL憑證使用設定，可依應用程式ID/類型篩選",
+    "matchKeywords": ["tls設定查詢", "ssl憑證使用", "certificate usage info", "應用程式憑證設定"],
+    "params": [
+      { "name": "applicationId", "prompt": "限定應用程式ID，留空查詢全部", "default": "", "upper": true },
+      { "name": "applicationType", "prompt": "限定應用程式類型", "default": "", "options": ["", "CLIENT", "SERVER"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT APPLICATION_ID, APPLICATION_TYPE, TLS_PROTOCOLS FROM QSYS2.CERTIFICATE_USAGE_INFO WHERE (APPLICATION_ID = '{applicationId}' OR '{applicationId}' = '') AND (APPLICATION_TYPE = '{applicationType}' OR '{applicationType}' = '')"
+  },
+  {
+    "id": "change_totp_key_call",
+    "serviceId": "change_totp_key",
+    "description": "產生/儲存/移除自己的TOTP金鑰",
+    "matchKeywords": ["產生totp金鑰", "change totp key", "重設totp", "mfa金鑰"],
+    "params": [
+      { "name": "key", "prompt": "TOTP金鑰值，或輸入 *GEN 產生新金鑰、*REMOVE 移除金鑰", "default": "*GEN", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.CHANGE_TOTP_KEY('{key}'))"
+  },
+  {
+    "id": "check_password_call",
+    "serviceId": "check_password",
+    "description": "檢查密碼是否符合系統密碼規則",
+    "matchKeywords": ["檢查密碼規則", "check password", "密碼是否合規", "驗證密碼強度"],
+    "params": [
+      { "name": "password", "prompt": "請輸入要檢查的密碼值", "required": true },
+      { "name": "authorizationName", "prompt": "比對規則所用的使用者(留空預設*NONE，不套用特定使用者的密碼規則)", "default": "*NONE", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.CHECK_PASSWORD(PASSWORD => '{password}', AUTHORIZATION_NAME => '{authorizationName}'))"
+  },
+  {
+    "id": "check_totp_call",
+    "serviceId": "check_totp",
+    "description": "驗證密碼+TOTP動態密碼是否正確",
+    "matchKeywords": ["驗證totp", "check totp", "測試mfa", "totp是否正確"],
+    "params": [
+      { "name": "password", "prompt": "請輸入密碼", "required": true },
+      { "name": "totp", "prompt": "請輸入TOTP動態密碼值", "required": true }
+    ],
+    "sqlTemplate": "VALUES QSYS2.CHECK_TOTP('{password}', TOTP => '{totp}')"
+  },
+  {
+    "id": "ekm_info_call",
+    "serviceId": "ekm_info",
+    "description": "查詢外部金鑰管理(EKM)設定檔內容",
+    "matchKeywords": ["ekm設定", "external key management", "查詢ekm", "外部金鑰管理"],
+    "params": [
+      { "name": "pathName", "prompt": "請輸入EKM設定檔的IFS路徑", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.EKM_INFO('{pathName}'))"
+  },
+  {
+    "id": "exit_point_info_check",
+    "serviceId": "exit_point_info",
+    "description": "查詢系統Exit Point(出口點)登錄資訊，可依出口點名稱關鍵字/是否已登錄篩選",
+    "matchKeywords": ["exit point", "出口點", "wrkreginf", "查詢出口點"],
+    "params": [
+      { "name": "exitPointName", "prompt": "限定出口點名稱關鍵字(模糊比對)，留空查全部", "default": "", "upper": true },
+      { "name": "registered", "prompt": "限定是否已登錄", "default": "", "options": ["", "YES", "NO"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.EXIT_POINT_INFO WHERE (EXIT_POINT_NAME LIKE '%{exitPointName}%' OR '{exitPointName}' = '') AND (REGISTERED = '{registered}' OR '{registered}' = '')"
+  },
+  {
+    "id": "exit_program_info_check",
+    "serviceId": "exit_program_info",
+    "description": "查詢Exit Point實際登錄的Exit Program清單，可依出口點名稱/程式庫篩選",
+    "matchKeywords": ["exit program", "出口程式", "查詢出口程式", "wrkreginf程式"],
+    "params": [
+      { "name": "exitPointName", "prompt": "限定出口點名稱關鍵字(模糊比對)，留空查全部", "default": "", "upper": true },
+      { "name": "exitProgramLibrary", "prompt": "限定出口程式所在Library，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.EXIT_PROGRAM_INFO WHERE (EXIT_POINT_NAME LIKE '%{exitPointName}%' OR '{exitPointName}' = '') AND (EXIT_PROGRAM_LIBRARY = '{exitProgramLibrary}' OR '{exitProgramLibrary}' = '') ORDER BY EXIT_POINT_NAME, EXIT_PROGRAM_NUMBER"
+  },
+  {
+    "id": "function_usage_check",
+    "serviceId": "function_usage",
+    "description": "查詢function usage(功能使用ID)授權設定，可依功能ID/使用者/允許或禁止篩選",
+    "matchKeywords": ["function usage", "功能使用授權", "dspfcnusg", "功能授權查詢"],
+    "params": [
+      { "name": "functionId", "prompt": "限定功能ID關鍵字(模糊比對)，留空查全部", "default": "", "upper": true },
+      { "name": "userName", "prompt": "限定使用者，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "usage", "prompt": "限定使用設定", "default": "", "options": ["", "ALLOWED", "DENIED"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.FUNCTION_USAGE WHERE (FUNCTION_ID LIKE '%{functionId}%' OR '{functionId}' = '') AND (USER_NAME = '{userName}' OR '{userName}' = '') AND (USAGE = '{usage}' OR '{usage}' = '') ORDER BY FUNCTION_ID, USER_NAME"
+  },
+  {
+    "id": "group_profile_entries_check",
+    "serviceId": "group_profile_entries",
+    "description": "查詢群組設定檔成員清單，可依群組名稱/使用者篩選",
+    "matchKeywords": ["群組成員", "group profile成員", "group profile entries", "查詢群組使用者"],
+    "params": [
+      { "name": "groupProfileName", "prompt": "限定群組名稱，留空查全部", "default": "", "upper": true },
+      { "name": "userProfileName", "prompt": "限定使用者，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.GROUP_PROFILE_ENTRIES WHERE (GROUP_PROFILE_NAME = '{groupProfileName}' OR '{groupProfileName}' = '') AND (USER_PROFILE_NAME = '{userProfileName}' OR '{userProfileName}' = '')"
+  },
+  {
+    "id": "kerberos_keytab_entries_check",
+    "serviceId": "kerberos_keytab_entries",
+    "description": "查詢Kerberos金鑰表(keytab)項目，可指定keytab路徑/principal name，留空用預設keytab查全部",
+    "matchKeywords": ["kerberos", "keytab", "dspkrbkte", "金鑰表查詢"],
+    "params": [
+      { "name": "keyTablePath", "prompt": "keytab檔案IFS路徑，留空使用系統預設keytab", "default": "" },
+      { "name": "principalName", "prompt": "限定principal name，留空查全部", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.KERBEROS_KEYTAB_ENTRIES(NULLIF('{keyTablePath}', ''), NULLIF('{principalName}', ''))) ORDER BY PRINCIPAL_NAME"
+  },
+  {
+    "id": "object_ownership_check",
+    "serviceId": "object_ownership",
+    "description": "查詢物件擁有者資訊，可依擁有者/物件類型篩選，也可只看IFS物件",
+    "matchKeywords": ["物件擁有者", "wrkobjown", "object ownership", "查詢物件owner"],
+    "params": [
+      { "name": "authorizationName", "prompt": "限定擁有者(使用者)，留空查全部", "default": "", "upper": true },
+      { "name": "objectType", "prompt": "限定物件類型，例如 *FILE，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.OBJECT_OWNERSHIP WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (OBJECT_TYPE = '{objectType}' OR '{objectType}' = '')"
+  },
+  {
+    "id": "object_privileges_call",
+    "serviceId": "object_privileges",
+    "description": "查詢指定物件的授權明細(哪些使用者、各自授權等級)",
+    "matchKeywords": ["dspobjaut", "物件授權明細", "object privileges", "查詢物件授權對象"],
+    "params": [
+      { "name": "systemObjectSchema", "prompt": "請輸入物件所在Library", "required": true, "upper": true },
+      { "name": "systemObjectName", "prompt": "請輸入物件名稱", "required": true, "upper": true },
+      { "name": "objectType", "prompt": "請輸入物件類型，例如 *FILE", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.OBJECT_PRIVILEGES('{systemObjectSchema}', '{systemObjectName}', '{objectType}'))"
+  },
+  {
+    "id": "security_info_check",
+    "serviceId": "security_info",
+    "description": "查詢系統整體安全設定(QSECURITY等級、密碼規則、稽核控制)，只回傳一列",
+    "matchKeywords": ["dspseca", "dspsecaud", "系統安全設定", "security info", "qsecurity等級"],
+    "params": [],
+    "sqlTemplate": "SELECT SECURITY_LEVEL, PASSWORD_LEVEL, AUDITING_LEVEL, PASSWORD_EXPIRATION_INTERVAL, MAXIMUM_SIGNON_ATTEMPTS FROM QSYS2.SECURITY_INFO"
+  },
+  {
+    "id": "sql_check_authority_call",
+    "serviceId": "sql_check_authority",
+    "description": "檢查目前使用者是否有權限查詢指定的*FILE物件",
+    "matchKeywords": ["檢查檔案授權", "sql check authority", "是否有權限查詢檔案"],
+    "params": [
+      { "name": "libraryName", "prompt": "請輸入Library名稱", "required": true, "upper": true },
+      { "name": "fileName", "prompt": "請輸入檔案名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "VALUES QSYS2.SQL_CHECK_AUTHORITY('{libraryName}', '{fileName}')"
+  },
+  {
+    "id": "sql_check_function_usage_call",
+    "serviceId": "sql_check_function_usage",
+    "description": "檢查目前使用者是否有權限使用指定function usage ID",
+    "matchKeywords": ["檢查function usage權限", "sql check function usage", "是否有權限用此功能"],
+    "params": [
+      { "name": "functionUsage", "prompt": "請輸入function usage識別碼，例如 QIBM_DB_SQLADM", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "VALUES QSYS2.SQL_CHECK_FUNCTION_USAGE(FUNCTION_USAGE => '{functionUsage}')"
+  },
+  {
+    "id": "sql_check_special_authority_call",
+    "serviceId": "sql_check_special_authority",
+    "description": "檢查目前使用者是否具有指定的特殊權限",
+    "matchKeywords": ["檢查特殊權限", "sql check special authority", "是否有jobctl權限", "special authority檢查"],
+    "params": [
+      { "name": "specialAuthority", "prompt": "請輸入特殊權限值，例如 *JOBCTL", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "VALUES QSYS2.SQL_CHECK_SPECIAL_AUTHORITY(SPECIAL_AUTHORITY => '{specialAuthority}')"
+  },
+  {
+    "id": "user_info_basic_check",
+    "serviceId": "user_info_basic",
+    "description": "查詢使用者帳號基本資訊(精簡快速版)，可依帳號/狀態/類別/密碼到期天數篩選",
+    "matchKeywords": ["使用者基本資訊", "user info basic", "快速查帳號", "帳號稽核精簡版"],
+    "params": [
+      { "name": "authorizationName", "prompt": "限定使用者帳號(AUTHORIZATION_NAME)，留空查詢全部使用者", "default": "", "upper": true },
+      { "name": "daysUntilExpire", "prompt": "密碼到期天數門檻(幾天內到期)，直接按 Enter 使用預設值", "default": "999999" },
+      { "name": "status", "prompt": "帳號狀態", "default": "", "options": ["", "*ENABLED", "*DISABLED"], "advanced": true },
+      { "name": "userClassName", "prompt": "使用者類別，例如 *SECOFR，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.USER_INFO_BASIC WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (DAYS_UNTIL_PASSWORD_EXPIRES <= {daysUntilExpire} OR '{daysUntilExpire}' = '') AND (STATUS = '{status}' OR '{status}' = '') AND (USER_CLASS_NAME = '{userClassName}' OR '{userClassName}' = '')"
+  },
+  {
+    "id": "user_info_check",
+    "serviceId": "user_info",
+    "description": "查詢使用者帳號資訊，可依帳號/狀態/類別/密碼到期天數/多久未登入篩選",
+    "matchKeywords": ["密碼到期", "password expire", "帳號到期", "使用者稽核", "密碼過期", "使用者帳號", "停用帳號", "久未登入"],
+    "params": [
+      { "name": "authorizationName", "prompt": "限定使用者帳號(AUTHORIZATION_NAME)，留空查詢全部使用者", "default": "", "upper": true },
+      { "name": "daysUntilExpire", "prompt": "密碼到期天數門檻(幾天內到期)，直接按 Enter 使用預設值", "default": "999999" },
+      { "name": "status", "prompt": "帳號狀態", "default": "", "options": ["", "*ENABLED", "*DISABLED"], "advanced": true },
+      { "name": "userClassName", "prompt": "使用者類別，例如 *SECOFR，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "daysSinceLastSignon", "prompt": "只看幾天內未登入的帳號(0=不篩選)，直接按 Enter 使用預設值", "default": "0", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT AUTHORIZATION_NAME, STATUS, USER_CLASS_NAME, DAYS_UNTIL_PASSWORD_EXPIRES, PREVIOUS_SIGNON FROM QSYS2.USER_INFO WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (STATUS = '{status}' OR '{status}' = '') AND (USER_CLASS_NAME = '{userClassName}' OR '{userClassName}' = '') AND (DAYS_UNTIL_PASSWORD_EXPIRES <= {daysUntilExpire} OR '{daysUntilExpire}' = '999999') AND (PREVIOUS_SIGNON < CURRENT_TIMESTAMP - {daysSinceLastSignon} DAYS OR '{daysSinceLastSignon}' = '0') ORDER BY DAYS_UNTIL_PASSWORD_EXPIRES"
+  },
+  {
+    "id": "output_queue_check",
+    "serviceId": "output_queue_entries",
+    "description": "查詢某個列印佇列(Output Queue)裡的報表清單，可依狀態/使用者/檔名/建立時間篩選",
+    "matchKeywords": ["列印佇列", "output queue", "報表", "spool", "印表機佇列", "待印"],
+    "extract": {
+      "pattern": "([A-Za-z0-9_$#@]+)\\s*/\\s*([A-Za-z0-9_$#@]+)",
+      "groups": ["outqLib", "outqName"]
+    },
+    "params": [
+      { "name": "outqLib", "prompt": "請輸入 Output Queue 所在 Library", "required": true, "upper": true },
+      { "name": "outqName", "prompt": "請輸入 Output Queue 名稱", "required": true, "upper": true },
+      { "name": "status", "prompt": "報表狀態", "default": "", "options": ["", "HELD", "WAITING", "OPEN", "PENDING", "PRINTING", "READY", "SAVED", "SENDING", "WRITING", "CLOSED", "DEFERRED", "DELETED", "MESSAGE"], "advanced": true },
+      { "name": "userName", "prompt": "限定產生檔案的使用者，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "spooledFileName", "prompt": "限定報表名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "createdBefore", "prompt": "只看此時間點之前建立的檔案，留空=不篩選(等同於「到目前為止」)", "default": "CURRENT_TIMESTAMP", "type": "datetime-local", "advanced": true },
+      { "name": "detailedInfo", "prompt": "是否回傳完整欄位", "default": "NO", "options": ["NO", "YES"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT SPOOLED_FILE_NAME, USER_NAME, STATUS, CREATE_TIMESTAMP FROM TABLE (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '{outqLib}', OUTQ_NAME => '{outqName}', DETAILED_INFO => '{detailedInfo}')) X WHERE (STATUS = '{status}' OR '{status}' = '') AND (USER_NAME = '{userName}' OR '{userName}' = '') AND (SPOOLED_FILE_NAME = '{spooledFileName}' OR '{spooledFileName}' = '') AND (CREATE_TIMESTAMP < {createdBefore} OR {createdBefore} = CURRENT_TIMESTAMP) ORDER BY CREATE_TIMESTAMP DESC"
+  },
+  {
+    "id": "output_queue_entries_basic_check",
+    "serviceId": "output_queue_entries_basic",
+    "description": "查詢報表清單(效能較佳版本)，可依輸出佇列/使用者/狀態/大小門檻篩選",
+    "matchKeywords": ["報表清單", "spool清單", "列印工作", "output queue entries basic"],
+    "params": [
+      { "name": "outputQueueName", "prompt": "限定輸出佇列名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "outputQueueLibrary", "prompt": "限定輸出佇列所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "userName", "prompt": "限定產生檔案的使用者，留空不篩選", "default": "", "upper": true },
+      { "name": "status", "prompt": "報表狀態", "default": "", "options": ["", "HELD", "WAITING", "OPEN", "PENDING", "PRINTING", "READY", "SAVED", "SENDING", "WRITING", "CLOSED", "DEFERRED", "DELETED", "MESSAGE WAITING"], "advanced": true },
+      { "name": "minSizeMb", "prompt": "篩選門檻(MB)，直接按 Enter 使用預設值", "default": "0", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC WHERE (OUTPUT_QUEUE_NAME = '{outputQueueName}' OR '{outputQueueName}' = '') AND (OUTPUT_QUEUE_LIBRARY_NAME = '{outputQueueLibrary}' OR '{outputQueueLibrary}' = '') AND (USER_NAME = '{userName}' OR '{userName}' = '') AND (STATUS = '{status}' OR '{status}' = '') AND (SIZE > {minSizeMb} * 1024 OR '{minSizeMb}' = '0') ORDER BY SIZE DESC"
+  },
+  {
+    "id": "output_queue_info_check",
+    "serviceId": "output_queue_info",
+    "description": "查詢輸出佇列(Output Queue)本身的設定與狀態，可依名稱/狀態/檔案數門檻篩選",
+    "matchKeywords": ["輸出佇列狀態", "output queue info", "列印佇列設定", "writer狀態"],
+    "params": [
+      { "name": "outputQueueName", "prompt": "限定輸出佇列名稱，留空查全部", "default": "", "upper": true },
+      { "name": "outputQueueLibrary", "prompt": "限定所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "outputQueueStatus", "prompt": "佇列狀態", "default": "", "options": ["", "HELD", "RELEASED"], "advanced": true },
+      { "name": "minFiles", "prompt": "篩選門檻(最少檔案數)，直接按 Enter 使用預設值", "default": "0", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT OUTPUT_QUEUE_NAME, OUTPUT_QUEUE_LIBRARY_NAME, NUMBER_OF_FILES, NUMBER_OF_WRITERS, OUTPUT_QUEUE_STATUS, WRITER_JOB_STATUS, TEXT_DESCRIPTION FROM QSYS2.OUTPUT_QUEUE_INFO WHERE (OUTPUT_QUEUE_NAME = '{outputQueueName}' OR '{outputQueueName}' = '') AND (OUTPUT_QUEUE_LIBRARY_NAME = '{outputQueueLibrary}' OR '{outputQueueLibrary}' = '') AND (OUTPUT_QUEUE_STATUS = '{outputQueueStatus}' OR '{outputQueueStatus}' = '') AND (NUMBER_OF_FILES >= {minFiles} OR '{minFiles}' = '0') ORDER BY NUMBER_OF_FILES DESC"
+  },
+  {
+    "id": "spooled_file_info_check",
+    "serviceId": "spooled_file_info",
+    "description": "查詢系統上所有報表(不限特定佇列)，可依使用者/時間範圍/狀態/工作/輸出佇列/表單類型篩選",
+    "matchKeywords": ["系統報表", "spooled file info", "全系統列印工作", "誰在印東西"],
+    "params": [
+      { "name": "userName", "prompt": "限定使用者，留空查全部(*ALL)；預設*CURRENT只看自己的", "default": "*CURRENT", "upper": true },
+      { "name": "status", "prompt": "報表狀態", "default": "*ALL", "options": ["*ALL", "*CLOSED", "*DEFERRED", "*FINISHED", "*HELD", "*MESSAGE", "*OPEN", "*PENDING", "*PRINTER", "*READY", "*SAVED", "*SENDING", "*WRITING"] },
+      { "name": "jobName", "prompt": "限定工作，留空查全部(*ALL)", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "outputQueue", "prompt": "限定輸出佇列(格式 library/outq名稱)，留空查全部(*ALL)", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "userData", "prompt": "限定使用者自訂資料，留空查全部(*ALL)", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "formType", "prompt": "限定表單類型，留空查全部(*ALL)", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "systemName", "prompt": "限定來源系統名稱，留空查全部(*ALL)", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "startingTimestamp", "prompt": "只看此時間點之後建立的檔案，留空=不篩選", "default": "NULL", "type": "datetime-local", "advanced": true },
+      { "name": "endingTimestamp", "prompt": "只看此時間點之前建立的檔案，留空=不篩選", "default": "NULL", "type": "datetime-local", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE (QSYS2.SPOOLED_FILE_INFO(USER_NAME => '{userName}', STARTING_TIMESTAMP => {startingTimestamp}, ENDING_TIMESTAMP => {endingTimestamp}, STATUS => '{status}', JOB_NAME => '{jobName}', OUTPUT_QUEUE => '{outputQueue}', USER_DATA => '{userData}', FORM_TYPE => '{formType}', SYSTEM_NAME => '{systemName}')) X ORDER BY SIZE DESC"
+  },
+  {
+    "id": "clear_data_queue_call",
+    "serviceId": "clear_data_queue",
+    "description": "清除資料佇列中的訊息，可指定只清除符合鍵值條件的訊息",
+    "matchKeywords": ["清除資料佇列", "clear data queue", "dtaq清空"],
+    "params": [
+      { "name": "dataQueue", "prompt": "請輸入資料佇列名稱", "required": true, "upper": true },
+      { "name": "dataQueueLibrary", "prompt": "資料佇列所在Library", "default": "*LIBL", "upper": true },
+      { "name": "keyData", "prompt": "限定鍵值(僅keyed佇列適用)，留空清除全部訊息", "default": "", "advanced": true },
+      { "name": "keyOrder", "prompt": "鍵值比對方式(僅有填keyData時才生效)", "default": "", "options": ["", "EQ", "GE", "GT", "LE", "LT", "NE"], "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CLEAR_DATA_QUEUE(DATA_QUEUE => '{dataQueue}', DATA_QUEUE_LIBRARY => '{dataQueueLibrary}', KEY_DATA => '{keyData}', KEY_ORDER => '{keyOrder}')"
+  },
+  {
+    "id": "data_queue_entries_check",
+    "serviceId": "data_queue_entries",
+    "description": "查看資料佇列中的訊息內容(唯讀，不會移除)，可依選取方式/鍵值篩選",
+    "matchKeywords": ["查看資料佇列", "data queue entries", "dtaq內容", "佇列訊息內容"],
+    "params": [
+      { "name": "dataQueue", "prompt": "請輸入資料佇列名稱", "required": true, "upper": true },
+      { "name": "dataQueueLibrary", "prompt": "資料佇列所在Library", "default": "*LIBL", "upper": true },
+      { "name": "selectionType", "prompt": "選取方式", "default": "ALL", "options": ["ALL", "FIRST", "KEY", "LAST", "REVERSE"], "advanced": true },
+      { "name": "keyData", "prompt": "限定鍵值(SELECTION_TYPE=KEY時必填)", "default": "", "advanced": true },
+      { "name": "keyOrder", "prompt": "鍵值比對方式", "default": "", "options": ["", "EQ", "GE", "GT", "LE", "LT", "NE"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE (QSYS2.DATA_QUEUE_ENTRIES(DATA_QUEUE => '{dataQueue}', DATA_QUEUE_LIBRARY => '{dataQueueLibrary}', SELECTION_TYPE => '{selectionType}', KEY_DATA => '{keyData}', KEY_ORDER => '{keyOrder}')) X ORDER BY ORDINAL_POSITION"
+  },
+  {
+    "id": "data_queue_info_check",
+    "serviceId": "data_queue_info",
+    "description": "查詢資料佇列清單與目前訊息數，可依Library/名稱/類型/訊息數門檻篩選",
+    "matchKeywords": ["資料佇列清單", "data queue info", "dtaq堆積", "佇列訊息數"],
+    "params": [
+      { "name": "dataQueueLibrary", "prompt": "限定Library名稱，留空查全系統", "default": "", "upper": true },
+      { "name": "dataQueueName", "prompt": "限定資料佇列名稱，留空查全部", "default": "", "upper": true, "advanced": true },
+      { "name": "dataQueueType", "prompt": "限定資料佇列類型", "default": "", "options": ["", "DDM", "DISPLAY", "STANDARD"], "advanced": true },
+      { "name": "minCurrentMessages", "prompt": "篩選門檻(目前訊息數 至少)，直接按 Enter 使用預設值", "default": "0" }
+    ],
+    "sqlTemplate": "SELECT DATA_QUEUE_LIBRARY, DATA_QUEUE_NAME, DATA_QUEUE_TYPE, SEQUENCE, CURRENT_MESSAGES, MAXIMUM_MESSAGES, TEXT_DESCRIPTION FROM QSYS2.DATA_QUEUE_INFO WHERE (DATA_QUEUE_LIBRARY = '{dataQueueLibrary}' OR '{dataQueueLibrary}' = '') AND (DATA_QUEUE_NAME = '{dataQueueName}' OR '{dataQueueName}' = '') AND (DATA_QUEUE_TYPE = '{dataQueueType}' OR '{dataQueueType}' = '') AND (CURRENT_MESSAGES >= {minCurrentMessages} OR '{minCurrentMessages}' = '0') ORDER BY CURRENT_MESSAGES DESC"
+  },
+  {
+    "id": "receive_data_queue_check",
+    "serviceId": "receive_data_queue",
+    "description": "取得資料佇列中的一筆訊息，預設不移除(REMOVE=NO)，唯讀查看",
+    "matchKeywords": ["接收資料佇列", "receive data queue", "取出訊息", "dtaq取值"],
+    "params": [
+      { "name": "dataQueue", "prompt": "請輸入資料佇列名稱", "required": true, "upper": true },
+      { "name": "dataQueueLibrary", "prompt": "資料佇列所在Library", "default": "*LIBL", "upper": true },
+      { "name": "remove", "prompt": "是否從佇列移除此訊息（⚠ 選YES會真的消耗掉訊息，官方API預設是YES，這裡刻意預設NO避免誤觸）", "default": "NO", "options": ["NO", "YES"] },
+      { "name": "waitTime", "prompt": "沒有訊息時的等待秒數(0=不等待，負數=永久等待)", "default": "0", "advanced": true },
+      { "name": "keyData", "prompt": "限定鍵值(僅keyed佇列適用)", "default": "", "advanced": true },
+      { "name": "keyOrder", "prompt": "鍵值比對方式", "default": "", "options": ["", "EQ", "GE", "GT", "LE", "LT", "NE"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE (QSYS2.RECEIVE_DATA_QUEUE(DATA_QUEUE => '{dataQueue}', DATA_QUEUE_LIBRARY => '{dataQueueLibrary}', REMOVE => '{remove}', WAIT_TIME => {waitTime}, KEY_DATA => '{keyData}', KEY_ORDER => '{keyOrder}')) X"
+  },
+  {
+    "id": "send_data_queue_call",
+    "serviceId": "send_data_queue",
+    "description": "傳送一筆字元訊息到資料佇列",
+    "matchKeywords": ["傳送資料佇列", "send data queue", "dtaq傳送訊息"],
+    "params": [
+      { "name": "messageData", "prompt": "請輸入訊息內容", "required": true },
+      { "name": "dataQueue", "prompt": "請輸入資料佇列名稱", "required": true, "upper": true },
+      { "name": "dataQueueLibrary", "prompt": "資料佇列所在Library", "default": "*LIBL", "upper": true },
+      { "name": "keyData", "prompt": "鍵值(僅keyed佇列需要)", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.SEND_DATA_QUEUE(MESSAGE_DATA => '{messageData}', DATA_QUEUE => '{dataQueue}', DATA_QUEUE_LIBRARY => '{dataQueueLibrary}', KEY_DATA => '{keyData}')"
+  },
+  {
+    "id": "send_data_queue_binary_call",
+    "serviceId": "send_data_queue_binary",
+    "description": "傳送一筆二進位訊息到資料佇列",
+    "matchKeywords": ["傳送binary資料佇列", "send data queue binary", "dtaq二進位"],
+    "params": [
+      { "name": "messageData", "prompt": "請輸入二進位字面值(例如 BX'0102030A')，不要自行加外層引號", "required": true },
+      { "name": "dataQueue", "prompt": "請輸入資料佇列名稱", "required": true, "upper": true },
+      { "name": "dataQueueLibrary", "prompt": "資料佇列所在Library", "default": "*LIBL", "upper": true },
+      { "name": "keyData", "prompt": "鍵值(僅keyed佇列需要)", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.SEND_DATA_QUEUE_BINARY(MESSAGE_DATA => {messageData}, DATA_QUEUE => '{dataQueue}', DATA_QUEUE_LIBRARY => '{dataQueueLibrary}', KEY_DATA => '{keyData}')"
+  },
+  {
+    "id": "send_data_queue_utf8_call",
+    "serviceId": "send_data_queue_utf8",
+    "description": "傳送一筆UTF-8編碼訊息到資料佇列",
+    "matchKeywords": ["傳送utf8資料佇列", "send data queue utf8"],
+    "params": [
+      { "name": "messageData", "prompt": "請輸入訊息內容", "required": true },
+      { "name": "dataQueue", "prompt": "請輸入資料佇列名稱", "required": true, "upper": true },
+      { "name": "dataQueueLibrary", "prompt": "資料佇列所在Library", "default": "*LIBL", "upper": true },
+      { "name": "keyData", "prompt": "鍵值(僅keyed佇列需要)", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.SEND_DATA_QUEUE_UTF8(MESSAGE_DATA => '{messageData}', DATA_QUEUE => '{dataQueue}', DATA_QUEUE_LIBRARY => '{dataQueueLibrary}', KEY_DATA => '{keyData}')"
+  },
+  {
+    "id": "netstat_check",
+    "serviceId": "netstat_info",
+    "description": "查詢目前TCP/IP網路連線狀態，可依連線狀態/本機埠號/遠端埠號/位址(部分比對)篩選",
+    "matchKeywords": ["網路連線", "netstat", "tcp", "連線狀態", "port", "埠號"],
+    "params": [
+      { "name": "state", "prompt": "連線狀態", "default": "", "options": ["", "LISTEN", "ESTABLISHED", "CLOSE-WAIT", "CLOSING", "FIN-WAIT-1", "FIN-WAIT-2", "LAST-ACK", "SYN-RECEIVED", "SYN-SENT", "TIME-WAIT", "CLOSED"] },
+      { "name": "localPort", "prompt": "限定本機埠號，留空不篩選", "default": "", "advanced": true },
+      { "name": "remotePort", "prompt": "限定遠端埠號，留空不篩選", "default": "", "advanced": true },
+      { "name": "localAddress", "prompt": "限定本機位址(部分比對，例如輸入192.168.1可查整個網段)，留空不篩選", "default": "", "advanced": true },
+      { "name": "remoteAddress", "prompt": "限定遠端位址(部分比對)，留空不篩選", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT LOCAL_PORT, LOCAL_ADDRESS, REMOTE_ADDRESS, REMOTE_PORT, TCP_STATE FROM QSYS2.NETSTAT_INFO WHERE (TCP_STATE = '{state}' OR '{state}' = '') AND (CHAR(LOCAL_PORT) = '{localPort}' OR '{localPort}' = '') AND (CHAR(REMOTE_PORT) = '{remotePort}' OR '{remotePort}' = '') AND (LOCAL_ADDRESS LIKE '%{localAddress}%' OR '{localAddress}' = '') AND (REMOTE_ADDRESS LIKE '%{remoteAddress}%' OR '{remoteAddress}' = '')"
+  },
+  {
+    "id": "asp_check",
+    "serviceId": "asp_info",
+    "description": "查詢輔助儲存池(ASP)容量與可用空間，可依編號/裝置名稱/狀態/類型/可用空間門檻篩選",
+    "matchKeywords": ["asp", "儲存池", "磁碟空間", "storage", "容量不足", "disk space"],
+    "params": [
+      { "name": "aspNumber", "prompt": "限定ASP編號，留空不篩選", "default": "", "advanced": true },
+      { "name": "deviceDescriptionName", "prompt": "限定裝置描述名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "aspState", "prompt": "ASP狀態", "default": "", "options": ["", "ACTIVE", "AVAILABLE", "FAILED", "NONE", "VARIED OFF", "VARIED ON"], "advanced": true },
+      { "name": "aspType", "prompt": "ASP類型", "default": "", "options": ["", "PRIMARY", "SECONDARY", "SYSTEM", "UDFS", "USER"], "advanced": true },
+      { "name": "maxAvailableMb", "prompt": "篩選門檻(可用空間低於此MB數，0=不篩選)", "default": "0", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT ASP_NUMBER, DEVICE_DESCRIPTION_NAME, ASP_STATE, ASP_TYPE, TOTAL_CAPACITY, TOTAL_CAPACITY_AVAILABLE FROM QSYS2.ASP_INFO WHERE (CHAR(ASP_NUMBER) = '{aspNumber}' OR '{aspNumber}' = '') AND (DEVICE_DESCRIPTION_NAME = '{deviceDescriptionName}' OR '{deviceDescriptionName}' = '') AND (ASP_STATE = '{aspState}' OR '{aspState}' = '') AND (ASP_TYPE = '{aspType}' OR '{aspType}' = '') AND (TOTAL_CAPACITY_AVAILABLE < {maxAvailableMb} OR '{maxAvailableMb}' = '0') ORDER BY ASP_NUMBER"
+  },
+  {
+    "id": "activation_group_info_call",
+    "serviceId": "activation_group_info",
+    "description": "查詢工作的Activation Group(啟動群組)屬性清單",
+    "matchKeywords": ["activation group", "啟動群組", "查詢啟動群組", "dspjob啟動群組"],
+    "params": [
+      { "name": "jobName", "prompt": "請輸入工作名稱，格式job-number/job-user/job-name，或輸入 * 代表目前工作", "default": "*" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.ACTIVATION_GROUP_INFO('{jobName}'))"
+  },
+  {
+    "id": "binding_directory_info_check",
+    "serviceId": "binding_directory_info",
+    "description": "查詢Binding Directory(繫結目錄)裡的項目，可依繫結目錄/程式庫/項目名稱/項目類型篩選",
+    "matchKeywords": ["binding directory", "繫結目錄", "dspbnddir", "查詢binding directory項目"],
+    "params": [
+      { "name": "bindingDirectoryLibrary", "prompt": "限定繫結目錄所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "bindingDirectory", "prompt": "限定繫結目錄名稱，留空不篩選", "default": "", "upper": true },
+      { "name": "entry", "prompt": "限定項目名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "entryType", "prompt": "限定項目類型", "default": "", "options": ["", "*MODULE", "*SRVPGM"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.BINDING_DIRECTORY_INFO WHERE (BINDING_DIRECTORY_LIBRARY = '{bindingDirectoryLibrary}' OR '{bindingDirectoryLibrary}' = '') AND (BINDING_DIRECTORY = '{bindingDirectory}' OR '{bindingDirectory}' = '') AND (ENTRY = '{entry}' OR '{entry}' = '') AND (ENTRY_TYPE = '{entryType}' OR '{entryType}' = '') ORDER BY BINDING_DIRECTORY_LIBRARY, BINDING_DIRECTORY"
+  },
+  {
+    "id": "bound_module_info_check",
+    "serviceId": "bound_module_info",
+    "description": "查詢ILE程式/服務程式繫結的模組明細，可依程式庫/程式名稱篩選",
+    "matchKeywords": ["bound module", "繫結模組", "查詢模組明細", "dsppgm模組"],
+    "params": [
+      { "name": "programLibrary", "prompt": "限定程式所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "programName", "prompt": "限定程式/服務程式名稱，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT PROGRAM_LIBRARY, PROGRAM_NAME, BOUND_MODULE_LIBRARY, BOUND_MODULE, MODULE_CREATE_TIMESTAMP FROM QSYS2.BOUND_MODULE_INFO WHERE (PROGRAM_LIBRARY = '{programLibrary}' OR '{programLibrary}' = '') AND (PROGRAM_NAME = '{programName}' OR '{programName}' = '')"
+  },
+  {
+    "id": "bound_srvpgm_info_check",
+    "serviceId": "bound_srvpgm_info",
+    "description": "查詢ILE程式/服務程式繫結的服務程式明細，可依程式庫/程式名稱篩選",
+    "matchKeywords": ["bound srvpgm", "繫結服務程式", "查詢服務程式繫結", "dsppgm服務程式"],
+    "params": [
+      { "name": "programLibrary", "prompt": "限定程式所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "programName", "prompt": "限定程式/服務程式名稱，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.BOUND_SRVPGM_INFO WHERE (PROGRAM_LIBRARY = '{programLibrary}' OR '{programLibrary}' = '') AND (PROGRAM_NAME = '{programName}' OR '{programName}' = '')"
+  },
+  {
+    "id": "command_info_check",
+    "serviceId": "command_info",
+    "description": "查詢CL指令定義資訊，可依指令庫/指令名稱/是否為proxy command篩選",
+    "matchKeywords": ["command info", "cl指令定義", "dspcmd", "查詢指令定義"],
+    "params": [
+      { "name": "commandLibrary", "prompt": "限定指令所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "commandName", "prompt": "限定指令名稱，留空不篩選", "default": "", "upper": true },
+      { "name": "proxyCommand", "prompt": "限定是否為proxy command", "default": "", "options": ["", "YES", "NO"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.COMMAND_INFO WHERE (COMMAND_LIBRARY = '{commandLibrary}' OR '{commandLibrary}' = '') AND (COMMAND_NAME = '{commandName}' OR '{commandName}' = '') AND (PROXY_COMMAND = '{proxyCommand}' OR '{proxyCommand}' = '')"
+  },
+  {
+    "id": "function_info_check",
+    "serviceId": "function_info",
+    "description": "查詢function usage(功能使用ID)定義明細，可依功能ID/類型/預設使用權限篩選",
+    "matchKeywords": ["function info", "功能定義查詢", "function usage id定義"],
+    "params": [
+      { "name": "functionId", "prompt": "限定功能ID關鍵字(模糊比對)，留空查全部", "default": "", "upper": true },
+      { "name": "functionType", "prompt": "限定功能類型", "default": "", "options": ["", "PRODUCT", "GROUP", "ADMINISTRABLE"], "advanced": true },
+      { "name": "defaultUsage", "prompt": "限定預設使用設定", "default": "", "options": ["", "ALLOWED", "DENIED"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.FUNCTION_INFO WHERE (FUNCTION_ID LIKE '%{functionId}%' OR '{functionId}' = '') AND (FUNCTION_TYPE = '{functionType}' OR '{functionType}' = '') AND (DEFAULT_USAGE = '{defaultUsage}' OR '{defaultUsage}' = '') ORDER BY FUNCTION_ID"
+  },
+  {
+    "id": "library_info_call",
+    "serviceId": "library_info",
+    "description": "查詢指定程式庫的詳細屬性",
+    "matchKeywords": ["library info", "程式庫屬性", "rtvlibd", "查詢程式庫大小"],
+    "params": [
+      { "name": "libraryName", "prompt": "請輸入Library名稱", "required": true, "upper": true },
+      { "name": "detailedInfo", "prompt": "是否含程式庫大小(計算量大的程式庫較慢)", "default": "LIBRARY_SIZE", "options": ["LIBRARY_SIZE", "NO"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.LIBRARY_INFO(LIBRARY_NAME => '{libraryName}', DETAILED_INFO => '{detailedInfo}'))"
+  },
+  {
+    "id": "library_list_info_check",
+    "serviceId": "library_list_info",
+    "description": "查詢目前工作的程式庫清單(Library List)",
+    "matchKeywords": ["library list", "程式庫清單", "dsplibl", "查詢library list"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.LIBRARY_LIST_INFO ORDER BY ORDINAL_POSITION"
+  },
+  {
+    "id": "program_export_import_info_check",
+    "serviceId": "program_export_import_info",
+    "description": "查詢ILE程式/服務程式的匯出/匯入項目，可依程式庫/程式名稱/項目類型篩選",
+    "matchKeywords": ["export import info", "匯出匯入項目", "查詢export symbol", "服務程式匯出"],
+    "params": [
+      { "name": "programLibrary", "prompt": "限定程式所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "programName", "prompt": "限定程式/服務程式名稱，留空不篩選", "default": "", "upper": true },
+      { "name": "symbolUsage", "prompt": "限定項目類型", "default": "", "options": ["", "*ACTGRPEXP", "*ACTGRPIMP", "*DTAEXP", "*PROCEXP"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.PROGRAM_EXPORT_IMPORT_INFO WHERE (PROGRAM_LIBRARY = '{programLibrary}' OR '{programLibrary}' = '') AND (PROGRAM_NAME = '{programName}' OR '{programName}' = '') AND (SYMBOL_USAGE = '{symbolUsage}' OR '{symbolUsage}' = '')"
+  },
+  {
+    "id": "program_info_check",
+    "serviceId": "program_info",
+    "description": "查詢程式/服務程式的基本屬性，可依程式庫/程式名稱/擁有者篩選",
+    "matchKeywords": ["program info", "程式屬性查詢", "dsppgm", "查詢程式擁有者"],
+    "params": [
+      { "name": "programLibrary", "prompt": "限定程式所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "programName", "prompt": "限定程式/服務程式名稱，留空不篩選", "default": "", "upper": true },
+      { "name": "programOwner", "prompt": "限定擁有者，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.PROGRAM_INFO WHERE (PROGRAM_LIBRARY = '{programLibrary}' OR '{programLibrary}' = '') AND (PROGRAM_NAME = '{programName}' OR '{programName}' = '') AND (PROGRAM_OWNER = '{programOwner}' OR '{programOwner}' = '')"
+  },
+  {
+    "id": "program_resolved_activations_call",
+    "serviceId": "program_resolved_activations",
+    "description": "查詢程式/服務程式完整的啟動鏈(所有會被連鎖啟動的服務程式)",
+    "matchKeywords": ["activation chain", "啟動鏈", "resolved activations", "查詢連鎖啟動服務程式"],
+    "params": [
+      { "name": "programLibrary", "prompt": "請輸入程式所在Library", "required": true, "upper": true },
+      { "name": "programName", "prompt": "請輸入程式/服務程式名稱", "required": true, "upper": true },
+      { "name": "objectType", "prompt": "物件類型", "default": "*PGM", "options": ["*PGM", "*SRVPGM"] },
+      { "name": "deferredServicePrograms", "prompt": "是否追蹤deferred activation的服務程式", "default": "YES", "options": ["YES", "NO"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.PROGRAM_RESOLVED_ACTIVATIONS(PROGRAM_LIBRARY => '{programLibrary}', PROGRAM_NAME => '{programName}', OBJECT_TYPE => '{objectType}', DEFERRED_SERVICE_PROGRAMS => '{deferredServicePrograms}'))"
+  },
+  {
+    "id": "program_resolved_imports_call",
+    "serviceId": "program_resolved_imports",
+    "description": "查詢程式/服務程式的匯入符號是被哪個服務程式解析對應的",
+    "matchKeywords": ["resolved imports", "匯入符號解析", "查詢program依賴哪個srvpgm"],
+    "params": [
+      { "name": "programLibrary", "prompt": "請輸入程式所在Library", "required": true, "upper": true },
+      { "name": "programName", "prompt": "請輸入程式/服務程式名稱", "required": true, "upper": true },
+      { "name": "objectType", "prompt": "物件類型", "default": "*PGM", "options": ["*PGM", "*SRVPGM"] }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.PROGRAM_RESOLVED_IMPORTS(PROGRAM_LIBRARY => '{programLibrary}', PROGRAM_NAME => '{programName}', OBJECT_TYPE => '{objectType}'))"
+  },
+  {
+    "id": "stack_info_call",
+    "serviceId": "stack_info",
+    "description": "查詢工作/執行緒的呼叫堆疊(call stack)明細",
+    "matchKeywords": ["call stack", "呼叫堆疊", "stack info", "查詢程式卡在哪一層"],
+    "params": [
+      { "name": "jobName", "prompt": "工作名稱，輸入 * 代表目前工作(預設)", "default": "*" },
+      { "name": "threadId", "prompt": "執行緒ID，留空使用預設(目前工作的初始執行緒)，或輸入 ALL 查全部執行緒", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.STACK_INFO(JOB_NAME => '{jobName}', THREAD_ID => NULLIF('{threadId}', '')))"
+  },
+  {
+    "id": "add_service_tools_server_configuration_entry_call",
+    "serviceId": "add_service_tools_server_configuration_entry",
+    "description": "新增一筆Service Tools Server設定項目(IPL備援用途)",
+    "matchKeywords": ["新增服務工具伺服器設定", "add service tools server", "sts設定項目"],
+    "params": [
+      { "name": "partitionUuid", "prompt": "請輸入partition UUID(16 byte)，格式 BX'...'", "required": true },
+      { "name": "resourceName", "prompt": "請輸入通訊裝置資源名稱", "required": true, "upper": true },
+      { "name": "ipv4Address", "prompt": "IPv4位址，需與IPv6位址至少擇一填寫", "default": "" },
+      { "name": "gatewayAddress", "prompt": "IPv4閘道位址(有填IPv4位址時必填)", "default": "" },
+      { "name": "subnetMask", "prompt": "子網路遮罩(有填IPv4位址時必填)", "default": "" },
+      { "name": "ipv6Address", "prompt": "IPv6位址，需與IPv4位址至少擇一填寫", "default": "", "advanced": true },
+      { "name": "virtualLanId", "prompt": "Virtual LAN ID(1-4094)，留空代表不使用VLAN", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.ADD_SERVICE_TOOLS_SERVER_CONFIGURATION_ENTRY(PARTITION_UUID => {partitionUuid}, RESOURCE_NAME => '{resourceName}', IPV4_ADDRESS => NULLIF('{ipv4Address}', ''), GATEWAY_ADDRESS => NULLIF('{gatewayAddress}', ''), SUBNET_MASK => NULLIF('{subnetMask}', ''), IPV6_ADDRESS => NULLIF('{ipv6Address}', ''), VIRTUAL_LAN_ID => NULLIF('{virtualLanId}', ''))"
+  },
+  {
+    "id": "change_service_tools_server_call",
+    "serviceId": "change_service_tools_server",
+    "description": "變更目前生效中的Service Tools Server網路設定",
+    "matchKeywords": ["變更服務工具伺服器", "change service tools server", "sts網路設定"],
+    "params": [
+      { "name": "action", "prompt": "啟用/停用服務工具伺服器，留空不變更狀態", "default": "", "options": ["", "ENABLE", "DISABLE"] },
+      { "name": "ipv4Address", "prompt": "IPv4位址，留空不變更", "default": "" },
+      { "name": "gatewayAddress", "prompt": "IPv4閘道位址，留空不變更", "default": "" },
+      { "name": "subnetMask", "prompt": "子網路遮罩，留空不變更", "default": "" },
+      { "name": "resourceName", "prompt": "通訊裝置資源名稱，留空不變更", "default": "", "upper": true, "advanced": true },
+      { "name": "serverName", "prompt": "伺服器名稱(網路上顯示用，最長12字元)，留空不變更", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_SERVICE_TOOLS_SERVER(ACTION => NULLIF('{action}', ''), IPV4_ADDRESS => NULLIF('{ipv4Address}', ''), GATEWAY_ADDRESS => NULLIF('{gatewayAddress}', ''), SUBNET_MASK => NULLIF('{subnetMask}', ''), RESOURCE_NAME => NULLIF('{resourceName}', ''), SERVER_NAME => NULLIF('{serverName}', ''))"
+  },
+  {
+    "id": "change_service_tools_server_configuration_entry_call",
+    "serviceId": "change_service_tools_server_configuration_entry",
+    "description": "變更指定Service Tools Server設定項目的內容",
+    "matchKeywords": ["變更服務工具伺服器設定項目", "change service tools server configuration entry"],
+    "params": [
+      { "name": "partitionUuid", "prompt": "請輸入要變更的partition UUID(16 byte)，格式 BX'...'", "required": true },
+      { "name": "ipv4Address", "prompt": "IPv4位址，留空不變更", "default": "" },
+      { "name": "gatewayAddress", "prompt": "IPv4閘道位址，留空不變更", "default": "" },
+      { "name": "subnetMask", "prompt": "子網路遮罩，留空不變更", "default": "", "advanced": true },
+      { "name": "ipv6Address", "prompt": "IPv6位址，留空不變更", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_SERVICE_TOOLS_SERVER_CONFIGURATION_ENTRY(PARTITION_UUID => {partitionUuid}, IPV4_ADDRESS => NULLIF('{ipv4Address}', ''), GATEWAY_ADDRESS => NULLIF('{gatewayAddress}', ''), SUBNET_MASK => NULLIF('{subnetMask}', ''), IPV6_ADDRESS => NULLIF('{ipv6Address}', ''))"
+  },
+  {
+    "id": "remove_service_tools_server_configuration_entry_call",
+    "serviceId": "remove_service_tools_server_configuration_entry",
+    "description": "移除指定的Service Tools Server設定項目",
+    "matchKeywords": ["移除服務工具伺服器設定項目", "remove service tools server configuration entry", "刪除sts設定"],
+    "params": [
+      { "name": "partitionUuid", "prompt": "請輸入要移除的partition UUID(16 byte)，格式 BX'...'", "required": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.REMOVE_SERVICE_TOOLS_SERVER_CONFIGURATION_ENTRY(PARTITION_UUID => {partitionUuid})"
+  },
+  {
+    "id": "service_tools_server_configuration_entry_info_check",
+    "serviceId": "service_tools_server_configuration_entry_info",
+    "description": "查詢所有Service Tools Server設定項目清單(IPL備援用途)",
+    "matchKeywords": ["查詢服務工具伺服器設定項目", "service tools server configuration entry info"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.SERVICE_TOOLS_SERVER_CONFIGURATION_ENTRY_INFO"
+  },
+  {
+    "id": "service_tools_server_info_check",
+    "serviceId": "service_tools_server_info",
+    "description": "查詢目前生效中的Service Tools Server網路設定",
+    "matchKeywords": ["查詢服務工具伺服器設定", "service tools server info", "sts目前設定"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.SERVICE_TOOLS_SERVER_INFO"
+  },
+  {
+    "id": "set_pase_shell_info_call",
+    "serviceId": "set_pase_shell_info",
+    "description": "設定使用者的PASE Shell路徑",
+    "matchKeywords": ["設定pase shell", "set pase shell", "openssh初始程式", "pase shell路徑"],
+    "params": [
+      { "name": "authorizationName", "prompt": "使用者名稱，或輸入 *CURRENT(目前使用者)、*DEFAULT(系統預設)", "default": "*CURRENT", "upper": true },
+      { "name": "shellPath", "prompt": "PASE Shell路徑(需以/開頭)，留空會移除該使用者的shell設定", "default": "" }
+    ],
+    "sqlTemplate": "CALL QSYS2.SET_PASE_SHELL_INFO('{authorizationName}', NULLIF('{shellPath}', ''))"
+  },
+  {
+    "id": "data_area_info_call",
+    "serviceId": "data_area_info",
+    "description": "查詢資料區域(Data Area)目前的值",
+    "matchKeywords": ["data area", "資料區域", "查詢dtaara", "rtvdtaara"],
+    "params": [
+      { "name": "dataAreaName", "prompt": "資料區域名稱，或輸入 *LDA/*PDA/*GDA 特殊值", "required": true, "upper": true },
+      { "name": "dataAreaLibrary", "prompt": "資料區域所在Library，留空預設*LIBL", "default": "*LIBL", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.DATA_AREA_INFO(DATA_AREA_NAME => '{dataAreaName}', DATA_AREA_LIBRARY => '{dataAreaLibrary}'))"
+  },
+  {
+    "id": "electronic_service_agent_info_check",
+    "serviceId": "electronic_service_agent_info",
+    "description": "查詢Electronic Service Agent(ESA)連線狀態",
+    "matchKeywords": ["esa連線狀態", "electronic service agent", "查詢esa"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.ELECTRONIC_SERVICE_AGENT_INFO"
+  },
+  {
+    "id": "environment_variable_info_check",
+    "serviceId": "environment_variable_info",
+    "description": "查詢環境變數清單，可依類型/名稱篩選",
+    "matchKeywords": ["環境變數", "environment variable", "wrkenvvar", "查詢env var"],
+    "params": [
+      { "name": "environmentVariableType", "prompt": "限定類型", "default": "", "options": ["", "SYSTEM", "JOB", "PASE"] },
+      { "name": "environmentVariableName", "prompt": "限定變數名稱關鍵字(模糊比對)，留空查全部", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.ENVIRONMENT_VARIABLE_INFO WHERE (ENVIRONMENT_VARIABLE_TYPE = '{environmentVariableType}' OR '{environmentVariableType}' = '') AND (ENVIRONMENT_VARIABLE_NAME LIKE '%{environmentVariableName}%' OR '{environmentVariableName}' = '')"
+  },
+  {
+    "id": "group_ptf_info_check",
+    "serviceId": "group_ptf_info",
+    "description": "查詢PTF Group(PTF群組)安裝狀態，可依群組名稱/狀態篩選",
+    "matchKeywords": ["ptf group", "ptf群組", "wrkptfgrp", "cum等級查詢"],
+    "params": [
+      { "name": "ptfGroupName", "prompt": "限定PTF群組名稱，留空查全部", "default": "", "upper": true },
+      { "name": "ptfGroupStatus", "prompt": "限定狀態", "default": "", "options": ["", "INSTALLED", "NOT INSTALLED", "ON ORDER", "ERROR", "APPLY AT NEXT IPL", "UNKNOWN"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.GROUP_PTF_INFO WHERE (PTF_GROUP_NAME = '{ptfGroupName}' OR '{ptfGroupName}' = '') AND (PTF_GROUP_STATUS = '{ptfGroupStatus}' OR '{ptfGroupStatus}' = '')"
+  },
+  {
+    "id": "jvm_info_call",
+    "serviceId": "jvm_info",
+    "description": "查詢目前系統上所有active的JVM job資訊",
+    "matchKeywords": ["jvm資訊", "jvm_info", "wrkjvmjob", "java虛擬機狀態", "jvm記憶體"],
+    "params": [
+      { "name": "waitTime", "prompt": "等待JVM回應的逾時秒數(1-120)", "default": "3" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.JVM_INFO(WAIT_TIME => {waitTime})) ORDER BY CURRENT_HEAP_SIZE DESC"
+  },
+  {
+    "id": "license_info_check",
+    "serviceId": "license_info",
+    "description": "查詢授權產品/功能明細，可依產品ID/是否已安裝篩選",
+    "matchKeywords": ["授權資訊", "license info", "wrklicinf", "查詢授權到期"],
+    "params": [
+      { "name": "productId", "prompt": "限定產品ID，留空查全部", "default": "", "upper": true },
+      { "name": "installed", "prompt": "限定是否已安裝", "default": "", "options": ["", "YES", "NO"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.LICENSE_INFO WHERE (PRODUCT_ID = '{productId}' OR '{productId}' = '') AND (INSTALLED = '{installed}' OR '{installed}' = '')"
+  },
+  {
+    "id": "message_file_data_check",
+    "serviceId": "message_file_data",
+    "description": "查詢訊息檔裡每一則訊息的完整定義，可依訊息檔/訊息ID篩選",
+    "matchKeywords": ["message file data", "訊息檔定義", "dspmsgd", "查詢訊息文字"],
+    "params": [
+      { "name": "messageFileLibrary", "prompt": "限定訊息檔所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "messageFile", "prompt": "限定訊息檔名稱，留空不篩選", "default": "", "upper": true },
+      { "name": "messageId", "prompt": "限定訊息ID，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.MESSAGE_FILE_DATA WHERE (MESSAGE_FILE_LIBRARY = '{messageFileLibrary}' OR '{messageFileLibrary}' = '') AND (MESSAGE_FILE = '{messageFile}' OR '{messageFile}' = '') AND (MESSAGE_ID = '{messageId}' OR '{messageId}' = '')"
+  },
+  {
+    "id": "message_queue_info_call",
+    "serviceId": "message_queue_info",
+    "description": "查詢訊息佇列裡目前的訊息清單",
+    "matchKeywords": ["message queue info", "訊息佇列查詢", "dspmsg", "查詢qsysopr訊息"],
+    "params": [
+      { "name": "queueLibrary", "prompt": "訊息佇列所在Library，留空預設QSYS", "default": "QSYS", "upper": true },
+      { "name": "queueName", "prompt": "訊息佇列名稱，留空預設QSYSOPR", "default": "QSYSOPR", "upper": true },
+      { "name": "messageFilter", "prompt": "限定訊息類型", "default": "ALL", "options": ["ALL", "COMPLETE", "INQUIRY", "SENDER"], "advanced": true },
+      { "name": "severityFilter", "prompt": "最低嚴重度(0-99)，留空預設0(全部)", "default": "0", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.MESSAGE_QUEUE_INFO(QUEUE_LIBRARY => '{queueLibrary}', QUEUE_NAME => '{queueName}', MESSAGE_FILTER => '{messageFilter}', SEVERITY_FILTER => {severityFilter}))"
+  },
+  {
+    "id": "network_attribute_info_check",
+    "serviceId": "network_attribute_info",
+    "description": "查詢系統網路屬性設定",
+    "matchKeywords": ["網路屬性", "network attribute", "dspneta", "rtvneta"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.NETWORK_ATTRIBUTE_INFO"
+  },
+  {
+    "id": "ptf_info_check",
+    "serviceId": "ptf_info",
+    "description": "查詢PTF套用狀態，可依產品ID/PTF編號/套用狀態篩選",
+    "matchKeywords": ["ptf狀態", "ptf info", "dspptf", "查詢ptf是否套用"],
+    "params": [
+      { "name": "ptfProductId", "prompt": "限定產品ID，留空不篩選", "default": "", "upper": true },
+      { "name": "ptfIdentifier", "prompt": "限定PTF編號，留空不篩選", "default": "", "upper": true },
+      { "name": "ptfLoadedStatus", "prompt": "限定套用狀態", "default": "", "options": ["", "LOADED", "APPLIED", "PERMANENTLY APPLIED", "NOT LOADED", "SUPERSEDED", "DAMAGED"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.PTF_INFO WHERE (PTF_PRODUCT_ID = '{ptfProductId}' OR '{ptfProductId}' = '') AND (PTF_IDENTIFIER = '{ptfIdentifier}' OR '{ptfIdentifier}' = '') AND (PTF_LOADED_STATUS = '{ptfLoadedStatus}' OR '{ptfLoadedStatus}' = '')"
+  },
+  {
+    "id": "qcmdexc_call",
+    "serviceId": "qcmdexc",
+    "description": "執行任意CL指令",
+    "matchKeywords": ["執行cl指令", "qcmdexc", "call cl command", "sql執行指令"],
+    "params": [
+      { "name": "clCommand", "prompt": "請輸入完整CL指令字串", "required": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.QCMDEXC('{clCommand}')"
+  },
+  {
+    "id": "reply_list_info_check",
+    "serviceId": "reply_list_info",
+    "description": "查詢目前工作的Reply List(自動回覆清單)項目",
+    "matchKeywords": ["reply list", "自動回覆清單", "wrkrpyle", "查詢reply list entry"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.REPLY_LIST_INFO"
+  },
+  {
+    "id": "send_message_call",
+    "serviceId": "send_message",
+    "description": "傳送預先定義的訊息到指定訊息佇列",
+    "matchKeywords": ["傳送訊息", "send message", "sndpgmmsg", "寄訊息到qsysopr"],
+    "params": [
+      { "name": "messageId", "prompt": "請輸入訊息ID(7碼)", "required": true, "upper": true },
+      { "name": "messageLength", "prompt": "請輸入訊息文字長度", "required": true },
+      { "name": "messageText", "prompt": "請輸入訊息文字(需含替代變數對應內容)", "required": true },
+      { "name": "messageFileLibrary", "prompt": "訊息檔所在Library，留空預設QSYS", "default": "QSYS", "upper": true, "advanced": true },
+      { "name": "messageFile", "prompt": "訊息檔名稱，留空預設QSQLMSG", "default": "QSQLMSG", "upper": true, "advanced": true },
+      { "name": "messageQueueLibrary", "prompt": "訊息佇列所在Library，留空預設QSYS", "default": "QSYS", "upper": true, "advanced": true },
+      { "name": "messageQueue", "prompt": "訊息佇列名稱，留空預設QSYSOPR", "default": "QSYSOPR", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.SEND_MESSAGE('{messageId}', {messageLength}, '{messageText}', '{messageFileLibrary}', '{messageFile}', '{messageQueueLibrary}', '{messageQueue}')"
+  },
+  {
+    "id": "services_info_check",
+    "serviceId": "services_info",
+    "description": "查詢IBM i Services目錄清單，可依分類/服務名稱篩選",
+    "matchKeywords": ["services info", "服務目錄", "查詢所有ibm i services", "db2 ptf group依賴"],
+    "params": [
+      { "name": "serviceCategory", "prompt": "限定分類，留空查全部", "default": "", "upper": true },
+      { "name": "serviceName", "prompt": "限定服務名稱關鍵字(模糊比對)，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SERVICES_INFO WHERE (SERVICE_CATEGORY = '{serviceCategory}' OR '{serviceCategory}' = '') AND (SERVICE_NAME LIKE '%{serviceName}%' OR '{serviceName}' = '')"
+  },
+  {
+    "id": "set_jvm_call",
+    "serviceId": "set_jvm",
+    "description": "對指定JVM job下達管理動作",
+    "matchKeywords": ["set jvm", "jvm管理動作", "產生heap dump", "wrkjvmjob動作"],
+    "params": [
+      { "name": "jobName", "prompt": "請輸入JVM工作的完整名稱，格式job-number/job-user/job-name", "required": true },
+      { "name": "action", "prompt": "動作", "default": "GC_ENABLE_VERBOSE", "options": ["GC_ENABLE_VERBOSE", "GC_DISABLE_VERBOSE", "GENERATE_HEAP_DUMP", "GENERATE_SYSTEM_DUMP", "GENERATE_JAVA_DUMP"] }
+    ],
+    "sqlTemplate": "CALL QSYS2.SET_JVM('{jobName}', '{action}')"
+  },
+  {
+    "id": "software_product_info_check",
+    "serviceId": "software_product_info",
+    "description": "查詢已安裝軟體產品明細，可依產品ID/是否已安裝篩選",
+    "matchKeywords": ["software product info", "軟體產品明細", "dspsfwrsc", "查詢已安裝產品"],
+    "params": [
+      { "name": "productId", "prompt": "限定產品ID，留空查全部", "default": "", "upper": true },
+      { "name": "installed", "prompt": "限定是否已安裝", "default": "", "options": ["", "YES", "NO"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SOFTWARE_PRODUCT_INFO WHERE (PRODUCT_ID = '{productId}' OR '{productId}' = '') AND (INSTALLED = '{installed}' OR '{installed}' = '')"
+  },
+  {
+    "id": "system_object_types_check",
+    "serviceId": "system_object_types",
+    "description": "查詢系統外部物件類型清單，可依類別篩選",
+    "matchKeywords": ["system object types", "物件類型清單", "external object type"],
+    "params": [
+      { "name": "category", "prompt": "限定類別", "default": "", "options": ["", "IFS", "LIBRARY"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SYSTEM_OBJECT_TYPES WHERE (CATEGORY = '{category}' OR '{category}' = '')"
+  },
+  {
+    "id": "system_value_info_check",
+    "serviceId": "system_value_info",
+    "description": "查詢系統值目前設定與出廠預設值，可依名稱關鍵字/分類篩選",
+    "matchKeywords": ["system value", "系統值查詢", "dspsysval", "查詢qmaxjob等系統值"],
+    "params": [
+      { "name": "systemValueName", "prompt": "限定系統值名稱關鍵字(模糊比對)，留空查全部", "default": "", "upper": true },
+      { "name": "category", "prompt": "限定分類", "default": "", "options": ["", "*ALC", "*DATTIM", "*EDT", "*LIBL", "*MSG", "*SEC", "*STG", "*SYSCTL"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT SYSTEM_VALUE_NAME, SYSTEM_VALUE, SHIPPED_DEFAULT_VALUE FROM QSYS2.SYSTEM_VALUE_INFO WHERE (SYSTEM_VALUE_NAME LIKE '%{systemValueName}%' OR '{systemValueName}' = '') AND (CATEGORY = '{category}' OR '{category}' = '')"
+  },
+  {
+    "id": "verify_name_call",
+    "serviceId": "verify_name",
+    "description": "檢查名稱字串是否符合系統物件名稱或SQL名稱規則",
+    "matchKeywords": ["verify name", "名稱驗證", "檢查物件名稱合法性", "sql identifier驗證"],
+    "params": [
+      { "name": "name", "prompt": "請輸入要檢查的名稱", "required": true },
+      { "name": "nameType", "prompt": "名稱類型", "default": "SYSTEM", "options": ["SYSTEM", "SQL"] }
+    ],
+    "sqlTemplate": "VALUES QSYS2.VERIFY_NAME('{name}', '{nameType}')"
+  },
+  {
+    "id": "workstation_info_check",
+    "serviceId": "workstation_info",
+    "description": "查詢子系統的工作站項目設定，可依子系統篩選",
+    "matchKeywords": ["workstation info", "工作站項目", "dspsbsd", "查詢子系統workstation entry"],
+    "params": [
+      { "name": "subsystemDescriptionLibrary", "prompt": "限定子系統描述所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "subsystemDescription", "prompt": "限定子系統描述名稱，留空不篩選", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.WORKSTATION_INFO WHERE (SUBSYSTEM_DESCRIPTION_LIBRARY = '{subsystemDescriptionLibrary}' OR '{subsystemDescriptionLibrary}' = '') AND (SUBSYSTEM_DESCRIPTION = '{subsystemDescription}' OR '{subsystemDescription}' = '')"
+  },
+  {
+    "id": "add_iscsi_target_call",
+    "serviceId": "add_iscsi_target",
+    "description": "設定一個iSCSI目標(如虛擬磁帶櫃VTL)",
+    "matchKeywords": [
+      "新增iscsi目標",
+      "add iscsi target",
+      "設定虛擬磁帶櫃",
+      "vtl設定"
+    ],
+    "params": [
+      { "name": "targetName", "prompt": "iSCSI目標名稱(IQN格式)", "required": true },
+      { "name": "targetHostName", "prompt": "iSCSI目標的TCP/IP主機名稱或IP位址", "required": true },
+      { "name": "targetPort", "prompt": "遠端TCP/IP埠號(1-65535)，留空預設3260", "default": "", "advanced": true },
+      { "name": "initiatorName", "prompt": "本機initiator名稱，留空使用系統產生的預設名稱", "default": "", "advanced": true },
+      { "name": "initiatorChapName", "prompt": "CHAP驗證用的initiator名稱，留空代表不使用CHAP驗證", "default": "", "advanced": true },
+      { "name": "initiatorChapSecret", "prompt": "CHAP驗證用的initiator密碼(至少12字元)，留空代表不使用CHAP驗證", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.ADD_ISCSI_TARGET(TARGET_NAME => '{targetName}', TARGET_HOST_NAME => '{targetHostName}', TARGET_PORT => NULLIF('{targetPort}', ''), INITIATOR_NAME => NULLIF('{initiatorName}', ''), INITIATOR_CHAP_NAME => NULLIF('{initiatorChapName}', ''), INITIATOR_CHAP_SECRET => NULLIF('{initiatorChapSecret}', ''))"
+  },
+  {
+    "id": "add_time_server_call",
+    "serviceId": "add_time_server",
+    "description": "將NTP伺服器加入時間協定設定清單",
+    "matchKeywords": [
+      "新增ntp伺服器",
+      "add time server",
+      "時間伺服器設定",
+      "network time protocol"
+    ],
+    "params": [
+      { "name": "timeServer", "prompt": "NTP伺服器的DNS名稱", "required": true },
+      { "name": "preferredIndicator", "prompt": "是否設為優先時間來源", "default": "NO", "options": ["NO", "YES"] }
+    ],
+    "sqlTemplate": "CALL QSYS2.ADD_TIME_SERVER(TIME_SERVER => '{timeServer}', PREFERRED_INDICATOR => '{preferredIndicator}')"
+  },
+  {
+    "id": "change_iscsi_target_call",
+    "serviceId": "change_iscsi_target",
+    "description": "變更既有iSCSI目標的CHAP驗證設定",
+    "matchKeywords": [
+      "變更iscsi目標",
+      "change iscsi target",
+      "iscsi chap設定"
+    ],
+    "params": [
+      { "name": "targetName", "prompt": "既有iSCSI目標名稱(IQN格式)", "required": true },
+      { "name": "targetHostName", "prompt": "既有iSCSI目標的TCP/IP主機名稱或IP位址", "required": true },
+      { "name": "targetPort", "prompt": "遠端TCP/IP埠號(1-65535)，留空預設3260", "default": "", "advanced": true },
+      { "name": "initiatorName", "prompt": "本機initiator名稱，留空代表使用系統預設initiator名稱", "default": "", "advanced": true },
+      { "name": "initiatorChapName", "prompt": "CHAP驗證用的initiator名稱，*SAME代表不變更", "default": "*SAME" },
+      { "name": "initiatorChapSecret", "prompt": "CHAP驗證用的initiator密碼，*SAME代表不變更", "default": "*SAME" }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_ISCSI_TARGET(TARGET_NAME => '{targetName}', TARGET_HOST_NAME => '{targetHostName}', TARGET_PORT => NULLIF('{targetPort}', ''), INITIATOR_NAME => NULLIF('{initiatorName}', ''), INITIATOR_CHAP_NAME => '{initiatorChapName}', INITIATOR_CHAP_SECRET => '{initiatorChapSecret}')"
+  },
+  {
+    "id": "change_objectconnect_call",
+    "serviceId": "change_objectconnect",
+    "description": "變更、啟動或停止ObjectConnect over IP伺服器",
+    "matchKeywords": [
+      "變更objectconnect",
+      "change objectconnect",
+      "chgobjca",
+      "objectconnect伺服器"
+    ],
+    "params": [
+      { "name": "state", "prompt": "啟動或停止伺服器，留空代表不變更狀態", "default": "", "options": ["", "START", "END"] },
+      { "name": "autoStart", "prompt": "是否自動啟動，留空代表不變更", "default": "", "options": ["", "NO", "YES"], "advanced": true },
+      { "name": "minimumJobs", "prompt": "最小伺服器工作數，留空代表不變更", "default": "", "advanced": true },
+      { "name": "maximumJobs", "prompt": "最大伺服器工作數，留空代表不變更", "default": "", "advanced": true },
+      { "name": "inactiveTime", "prompt": "工作閒置逾時(分鐘)，留空代表不變更", "default": "", "advanced": true },
+      { "name": "sendBuffer", "prompt": "TCP傳送緩衝區大小(bytes)，留空代表不變更", "default": "", "advanced": true },
+      { "name": "receiveBuffer", "prompt": "TCP接收緩衝區大小(bytes)，留空代表不變更", "default": "", "advanced": true },
+      { "name": "subsystemDescriptionLibrary", "prompt": "子系統描述所在Library，留空代表不變更", "default": "", "upper": true, "advanced": true },
+      { "name": "subsystemDescription", "prompt": "子系統描述名稱，留空代表不變更", "default": "", "upper": true, "advanced": true },
+      { "name": "authenticationType", "prompt": "驗證類型，留空代表不變更", "default": "", "options": ["", "ANY", "KERBEROS", "PASSWORD"], "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_OBJECTCONNECT(STATE => NULLIF('{state}', ''), AUTO_START => NULLIF('{autoStart}', ''), MINIMUM_JOBS => NULLIF('{minimumJobs}', ''), MAXIMUM_JOBS => NULLIF('{maximumJobs}', ''), INACTIVE_TIME => NULLIF('{inactiveTime}', ''), SEND_BUFFER => NULLIF('{sendBuffer}', ''), RECEIVE_BUFFER => NULLIF('{receiveBuffer}', ''), SUBSYSTEM_DESCRIPTION_LIBRARY => NULLIF('{subsystemDescriptionLibrary}', ''), SUBSYSTEM_DESCRIPTION => NULLIF('{subsystemDescription}', ''), AUTHENTICATION_TYPE => NULLIF('{authenticationType}', ''))"
+  },
+  {
+    "id": "dns_lookup_query",
+    "serviceId": "dns_lookup",
+    "description": "查詢主機名稱對應的IP位址(DNS查詢)",
+    "matchKeywords": [
+      "dns查詢",
+      "dns lookup",
+      "查ip位址",
+      "domain name查詢"
+    ],
+    "params": [
+      { "name": "searchName", "prompt": "要查詢的完整主機名稱(FQDN)", "required": true },
+      { "name": "domainServer", "prompt": "指定DNS伺服器(主機名稱或IP)，留空使用CHGTCPDMN設定的名稱伺服器", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.DNS_LOOKUP(SEARCH_NAME => '{searchName}', DOMAIN_SERVER => NULLIF('{domainServer}', '')))"
+  },
+  {
+    "id": "dns_lookup_ip_call",
+    "serviceId": "dns_lookup_ip",
+    "description": "依IP位址反查主機名稱",
+    "matchKeywords": [
+      "dns反查",
+      "dns lookup ip",
+      "ip查主機名稱",
+      "reverse dns"
+    ],
+    "params": [
+      { "name": "ipAddress", "prompt": "要反查的IP位址(IPv4或IPv6)", "required": true }
+    ],
+    "sqlTemplate": "VALUES QSYS2.DNS_LOOKUP_IP('{ipAddress}')"
+  },
+  {
+    "id": "drda_authentication_entry_info_check",
+    "serviceId": "drda_authentication_entry_info",
+    "description": "查詢伺服器驗證項目(Server Authentication Entry)",
+    "matchKeywords": [
+      "伺服器驗證項目",
+      "server authentication entry",
+      "addsvraute",
+      "drda驗證"
+    ],
+    "params": [
+      { "name": "authorizationName", "prompt": "使用者名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.DRDA_AUTHENTICATION_ENTRY_INFO WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '')"
+  },
+  {
+    "id": "http_server_info_check",
+    "serviceId": "http_server_info",
+    "description": "查詢HTTP Server for IBM i即時運作資訊",
+    "matchKeywords": [
+      "http伺服器資訊",
+      "http server info",
+      "apache伺服器狀態",
+      "web伺服器統計"
+    ],
+    "params": [
+      { "name": "serverName", "prompt": "HTTP伺服器實例名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.HTTP_SERVER_INFO WHERE (SERVER_NAME = '{serverName}' OR '{serverName}' = '')"
+  },
+  {
+    "id": "iscsi_info_check",
+    "serviceId": "iscsi_info",
+    "description": "查詢系統上的iSCSI設定資訊",
+    "matchKeywords": [
+      "iscsi設定查詢",
+      "iscsi info",
+      "iscsi目標清單"
+    ],
+    "params": [
+      { "name": "targetName", "prompt": "iSCSI目標名稱，留空查全部", "default": "" }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.ISCSI_INFO WHERE (TARGET_NAME = '{targetName}' OR '{targetName}' = '')"
+  },
+  {
+    "id": "netstat_interface_info_check",
+    "serviceId": "netstat_interface_info",
+    "description": "查詢IPv4/IPv6網路介面資訊",
+    "matchKeywords": [
+      "網路介面資訊",
+      "netstat interface",
+      "ip介面查詢",
+      "網卡設定查詢"
+    ],
+    "params": [
+      { "name": "interfaceLineType", "prompt": "介面使用的線路類型，留空查全部", "default": "", "options": ["", "ASYNC", "ELAN", "L2TP", "PPP", "PPPOE", "VETH"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.NETSTAT_INTERFACE_INFO WHERE (INTERFACE_LINE_TYPE = '{interfaceLineType}' OR '{interfaceLineType}' = '')"
+  },
+  {
+    "id": "netstat_job_info_check",
+    "serviceId": "netstat_job_info",
+    "description": "查詢使用網路連線的工作資訊",
+    "matchKeywords": [
+      "網路連線工作查詢",
+      "netstat job info",
+      "誰佔用了這個連線埠",
+      "工作網路連線"
+    ],
+    "params": [
+      { "name": "connectionType", "prompt": "連線類型，留空查全部", "default": "", "options": ["", "IPV4", "IPV6"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.NETSTAT_JOB_INFO WHERE (CONNECTION_TYPE = '{connectionType}' OR '{connectionType}' = '')"
+  },
+  {
+    "id": "netstat_route_info_check",
+    "serviceId": "netstat_route_info",
+    "description": "查詢IPv4/IPv6路由資訊",
+    "matchKeywords": [
+      "路由資訊查詢",
+      "netstat route",
+      "路由表查詢"
+    ],
+    "params": [
+      { "name": "routeStatus", "prompt": "路由狀態，留空查全部", "default": "" }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.NETSTAT_ROUTE_INFO WHERE (ROUTE_STATUS = '{routeStatus}' OR '{routeStatus}' = '')"
+  },
+  {
+    "id": "objectconnect_info_check",
+    "serviceId": "objectconnect_info",
+    "description": "查詢ObjectConnect over IP伺服器目前設定",
+    "matchKeywords": [
+      "objectconnect設定查詢",
+      "objectconnect info",
+      "chgobjca查詢"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.OBJECTCONNECT_INFO"
+  },
+  {
+    "id": "rdb_entry_info_check",
+    "serviceId": "rdb_entry_info",
+    "description": "查詢關聯式資料庫(RDB)目錄項目",
+    "matchKeywords": [
+      "rdb目錄查詢",
+      "rdb entry info",
+      "dsprdbdire",
+      "relational database directory"
+    ],
+    "params": [
+      { "name": "rdbName", "prompt": "RDB名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.RDB_ENTRY_INFO WHERE (RDB_NAME = '{rdbName}' OR '{rdbName}' = '')"
+  },
+  {
+    "id": "remove_iscsi_target_call",
+    "serviceId": "remove_iscsi_target",
+    "description": "永久移除一個iSCSI目標",
+    "matchKeywords": [
+      "移除iscsi目標",
+      "remove iscsi target",
+      "刪除虛擬磁帶櫃設定"
+    ],
+    "params": [
+      { "name": "targetName", "prompt": "iSCSI目標名稱(IQN格式)", "required": true },
+      { "name": "targetHostName", "prompt": "iSCSI目標的TCP/IP主機名稱或IP位址，留空代表不比對", "default": "", "advanced": true },
+      { "name": "targetPort", "prompt": "遠端TCP/IP埠號(1-65535)，留空預設3260", "default": "", "advanced": true },
+      { "name": "initiatorName", "prompt": "本機initiator名稱，留空代表使用系統預設initiator名稱", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.REMOVE_ISCSI_TARGET(TARGET_NAME => '{targetName}', TARGET_HOST_NAME => NULLIF('{targetHostName}', ''), TARGET_PORT => NULLIF('{targetPort}', ''), INITIATOR_NAME => NULLIF('{initiatorName}', ''))"
+  },
+  {
+    "id": "remove_time_server_call",
+    "serviceId": "remove_time_server",
+    "description": "將NTP伺服器從時間協定設定清單移除",
+    "matchKeywords": [
+      "移除ntp伺服器",
+      "remove time server",
+      "刪除時間伺服器設定"
+    ],
+    "params": [
+      { "name": "timeServer", "prompt": "要移除的NTP伺服器DNS名稱", "required": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.REMOVE_TIME_SERVER(TIME_SERVER => '{timeServer}')"
+  },
+  {
+    "id": "server_sbs_configuration_check",
+    "serviceId": "server_sbs_configuration",
+    "description": "查詢伺服器子系統路由設定",
+    "matchKeywords": [
+      "伺服器子系統路由查詢",
+      "server sbs configuration",
+      "替代子系統設定查詢"
+    ],
+    "params": [
+      { "name": "serverName", "prompt": "伺服器名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SERVER_SBS_CONFIGURATION WHERE (SERVER_NAME = '{serverName}' OR '{serverName}' = '') ORDER BY SERVER_NAME, SERVER_SEARCH_ORDER"
+  },
+  {
+    "id": "server_sbs_routing_check",
+    "serviceId": "server_sbs_routing",
+    "description": "查詢使用者的替代子系統路由設定",
+    "matchKeywords": [
+      "使用者子系統路由查詢",
+      "server sbs routing",
+      "個別使用者替代子系統"
+    ],
+    "params": [
+      { "name": "authorizationName", "prompt": "使用者名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SERVER_SBS_ROUTING WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '')"
+  },
+  {
+    "id": "server_share_info_check",
+    "serviceId": "server_share_info",
+    "description": "查詢IBM i NetServer共用資源(檔案/印表機分享)",
+    "matchKeywords": [
+      "netserver共用資源查詢",
+      "server share info",
+      "檔案分享查詢",
+      "印表機分享查詢"
+    ],
+    "params": [
+      { "name": "shareType", "prompt": "分享類型，留空查全部", "default": "", "options": ["", "FILE", "PRINT"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SERVER_SHARE_INFO WHERE (SHARE_TYPE = '{shareType}' OR '{shareType}' = '')"
+  },
+  {
+    "id": "set_server_sbs_routing_call",
+    "serviceId": "set_server_sbs_routing",
+    "description": "設定伺服器改用替代子系統路由",
+    "matchKeywords": [
+      "設定替代子系統",
+      "set server sbs routing",
+      "伺服器改用子系統"
+    ],
+    "params": [
+      { "name": "authorizationName", "prompt": "使用者/群組名稱，或*ALL套用到全部使用者", "required": true, "upper": true },
+      { "name": "serverName", "prompt": "伺服器名稱(如QRWTSRVR、QZDASOINIT等)，或*ALL(僅限authorizationName非*ALL時)", "required": true, "upper": true },
+      { "name": "subsystemName", "prompt": "要改用的子系統名稱，留空代表清除設定回復系統預設", "default": "", "upper": true, "advanced": true },
+      { "name": "allowRollover", "prompt": "替代子系統無法使用時是否允許改用預設子系統", "default": "", "options": ["", "YES", "NO"], "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.SET_SERVER_SBS_ROUTING(AUTHORIZATION_NAME => '{authorizationName}', SERVER_NAME => '{serverName}', SUBSYSTEM_NAME => NULLIF('{subsystemName}', ''), ALLOW_ROLLOVER => NULLIF('{allowRollover}', ''))"
+  },
+  {
+    "id": "tcpip_info_check",
+    "serviceId": "tcpip_info",
+    "description": "查詢目前主機連線的TCP/IP資訊",
+    "matchKeywords": [
+      "目前連線tcpip資訊",
+      "tcpip info",
+      "目前主機連線查詢"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.TCPIP_INFO"
+  },
+  {
+    "id": "telnet_server_attributes_check",
+    "serviceId": "telnet_server_attributes",
+    "description": "查詢Telnet伺服器屬性設定",
+    "matchKeywords": [
+      "telnet伺服器屬性",
+      "telnet server attributes",
+      "chgtelna查詢"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.TELNET_SERVER_ATTRIBUTES"
+  },
+  {
+    "id": "time_protocol_info_check",
+    "serviceId": "time_protocol_info",
+    "description": "查詢已設定的NTP伺服器清單",
+    "matchKeywords": [
+      "ntp伺服器清單查詢",
+      "time protocol info",
+      "network time protocol查詢"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.TIME_PROTOCOL_INFO"
+  },
+  {
+    "id": "add_tracked_job_queue_call",
+    "serviceId": "add_tracked_job_queue",
+    "description": "將工作佇列註冊為Submitted Job Tracker追蹤清單",
+    "matchKeywords": [
+      "註冊追蹤工作佇列",
+      "add tracked job queue",
+      "submitted job tracker設定"
+    ],
+    "params": [
+      { "name": "iaspName", "prompt": "工作佇列所在ASP名稱，*SYSBAS代表系統ASP或基本使用者ASP", "default": "*SYSBAS", "upper": true },
+      { "name": "jobQueueLibrary", "prompt": "工作佇列所在Library", "required": true, "upper": true },
+      { "name": "jobQueue", "prompt": "要追蹤的工作佇列名稱", "required": true, "upper": true },
+      { "name": "jobRetentionPeriod", "prompt": "工作結束後追蹤資訊保留分鐘數，留空預設0(立即可清除)", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.ADD_TRACKED_JOB_QUEUE(IASP_NAME => '{iaspName}', JOB_QUEUE_LIBRARY => '{jobQueueLibrary}', JOB_QUEUE => '{jobQueue}', JOB_RETENTION_PERIOD => NULLIF('{jobRetentionPeriod}', ''))"
+  },
+  {
+    "id": "autostart_job_info_check",
+    "serviceId": "autostart_job_info",
+    "description": "查詢子系統的自動啟動工作項目",
+    "matchKeywords": [
+      "自動啟動工作查詢",
+      "autostart job info",
+      "子系統自動啟動設定"
+    ],
+    "params": [
+      { "name": "subsystemDescriptionLibrary", "prompt": "指定子系統描述所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "subsystemDescription", "prompt": "指定子系統描述名稱，留空不篩選", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT AUTOSTART_JOB_NAME, JOB_DESCRIPTION_LIBRARY, JOB_DESCRIPTION FROM QSYS2.AUTOSTART_JOB_INFO WHERE (SUBSYSTEM_DESCRIPTION_LIBRARY = '{subsystemDescriptionLibrary}' OR '{subsystemDescriptionLibrary}' = '') AND (SUBSYSTEM_DESCRIPTION = '{subsystemDescription}' OR '{subsystemDescription}' = '')"
+  },
+  {
+    "id": "clear_tracked_job_info_call",
+    "serviceId": "clear_tracked_job_info",
+    "description": "從工作追蹤檔清除追蹤項目",
+    "matchKeywords": [
+      "清除追蹤工作",
+      "clear tracked job",
+      "工作追蹤檔清理"
+    ],
+    "params": [
+      { "name": "iaspName", "prompt": "工作追蹤檔所在ASP名稱，*SYSBAS代表系統ASP或基本使用者ASP", "default": "*SYSBAS", "upper": true },
+      { "name": "jobQueueLibrary", "prompt": "限定工作佇列所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "jobQueue", "prompt": "限定工作佇列名稱，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CLEAR_TRACKED_JOB_INFO(IASP_NAME => '{iaspName}', JOB_QUEUE_LIBRARY => NULLIF('{jobQueueLibrary}', ''), JOB_QUEUE => NULLIF('{jobQueue}', ''))"
+  },
+  {
+    "id": "communications_entry_info_check",
+    "serviceId": "communications_entry_info",
+    "description": "查詢子系統通訊項目",
+    "matchKeywords": [
+      "子系統通訊項目查詢",
+      "communications entry info",
+      "dspsbsd通訊項目"
+    ],
+    "params": [
+      { "name": "subsystemDescriptionLibrary", "prompt": "子系統描述所在Library", "required": true, "upper": true },
+      { "name": "subsystemDescription", "prompt": "子系統描述名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.COMMUNICATIONS_ENTRY_INFO WHERE SUBSYSTEM_DESCRIPTION_LIBRARY = '{subsystemDescriptionLibrary}' AND SUBSYSTEM_DESCRIPTION = '{subsystemDescription}'"
+  },
+  {
+    "id": "get_job_info_check",
+    "serviceId": "get_job_info",
+    "description": "查詢單一工作的詳細即時資訊",
+    "matchKeywords": [
+      "單一工作詳細資訊",
+      "get job info",
+      "查詢正在執行的sql"
+    ],
+    "params": [
+      { "name": "jobName", "prompt": "工作名稱，* 代表目前工作", "default": "*" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.GET_JOB_INFO(V_JOB_NAME => '{jobName}'))"
+  },
+  {
+    "id": "joblog_info_check",
+    "serviceId": "joblog_info",
+    "description": "查詢工作紀錄(Job Log)訊息內容",
+    "matchKeywords": [
+      "工作紀錄查詢",
+      "joblog info",
+      "dspjoblog查詢",
+      "工作log訊息"
+    ],
+    "params": [
+      { "name": "jobName", "prompt": "工作名稱，* 代表目前工作", "default": "*" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.JOBLOG_INFO('{jobName}')) X ORDER BY ORDINAL_POSITION"
+  },
+  {
+    "id": "job_description_info_check",
+    "serviceId": "job_description_info",
+    "description": "查詢工作描述(Job Description)設定",
+    "matchKeywords": [
+      "工作描述查詢",
+      "job description info",
+      "dspjobd查詢"
+    ],
+    "params": [
+      { "name": "jobDescriptionLibrary", "prompt": "工作描述所在Library，留空不篩選", "default": "", "upper": true },
+      { "name": "jobDescription", "prompt": "工作描述名稱，留空不篩選", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT JOB_DESCRIPTION_LIBRARY, JOB_DESCRIPTION, JOB_QUEUE_LIBRARY, JOB_QUEUE, JOB_QUEUE_PRIORITY FROM QSYS2.JOB_DESCRIPTION_INFO WHERE (JOB_DESCRIPTION_LIBRARY = '{jobDescriptionLibrary}' OR '{jobDescriptionLibrary}' = '') AND (JOB_DESCRIPTION = '{jobDescription}' OR '{jobDescription}' = '')"
+  },
+  {
+    "id": "job_queue_info_check",
+    "serviceId": "job_queue_info",
+    "description": "查詢工作佇列的目前狀態",
+    "matchKeywords": [
+      "工作佇列狀態查詢",
+      "job queue info",
+      "wrkjobq查詢",
+      "佇列有多少工作"
+    ],
+    "params": [
+      { "name": "jobQueueLibrary", "prompt": "工作佇列所在Library，留空查全部", "default": "", "upper": true },
+      { "name": "jobQueueName", "prompt": "工作佇列名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.JOB_QUEUE_INFO WHERE (JOB_QUEUE_LIBRARY = '{jobQueueLibrary}' OR '{jobQueueLibrary}' = '') AND (JOB_QUEUE_NAME = '{jobQueueName}' OR '{jobQueueName}' = '') ORDER BY NUMBER_OF_JOBS DESC"
+  },
+  {
+    "id": "open_files_check",
+    "serviceId": "open_files",
+    "description": "查詢指定工作目前開啟的檔案清單",
+    "matchKeywords": [
+      "工作開啟檔案查詢",
+      "open files",
+      "查工作佔用哪些檔案"
+    ],
+    "params": [
+      { "name": "jobName", "prompt": "工作名稱，* 代表目前工作", "default": "*" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.OPEN_FILES('{jobName}')) X"
+  },
+  {
+    "id": "prestart_job_info_check",
+    "serviceId": "prestart_job_info",
+    "description": "查詢子系統的預先啟動工作(Prestart Job)設定",
+    "matchKeywords": [
+      "預先啟動工作查詢",
+      "prestart job info",
+      "dspsbsd prestart"
+    ],
+    "params": [
+      { "name": "subsystemDescriptionLibrary", "prompt": "子系統描述所在Library", "required": true, "upper": true },
+      { "name": "subsystemDescription", "prompt": "子系統描述名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.PRESTART_JOB_INFO WHERE SUBSYSTEM_DESCRIPTION_LIBRARY = '{subsystemDescriptionLibrary}' AND SUBSYSTEM_DESCRIPTION = '{subsystemDescription}'"
+  },
+  {
+    "id": "job_info_check",
+    "serviceId": "job_info",
+    "description": "依多重條件查詢工作清單",
+    "matchKeywords": [
+      "工作清單查詢",
+      "job info",
+      "wrkusrjob查詢",
+      "wrksbsjob查詢",
+      "wrksbmjob查詢"
+    ],
+    "params": [
+      { "name": "jobStatusFilter", "prompt": "工作狀態篩選", "default": "*ALL", "options": ["*ALL", "*ACTIVE", "*JOBQ", "*OUTQ"], "upper": true },
+      { "name": "jobUserFilter", "prompt": "使用者名稱篩選，*ALL代表全部使用者", "default": "*ALL", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.JOB_INFO(JOB_STATUS_FILTER => '{jobStatusFilter}', JOB_USER_FILTER => '{jobUserFilter}')) X"
+  },
+  {
+    "id": "prestart_job_statistics_check",
+    "serviceId": "prestart_job_statistics",
+    "description": "查詢預先啟動工作項目的統計與效能資訊",
+    "matchKeywords": [
+      "預先啟動工作統計",
+      "prestart job statistics",
+      "dspactpj查詢"
+    ],
+    "params": [
+      { "name": "subsystemName", "prompt": "子系統名稱", "required": true, "upper": true },
+      { "name": "prestartJobProgramLibrary", "prompt": "Prestart Job程式所在Library，可用*LIBL/*CURLIB", "required": true, "upper": true },
+      { "name": "prestartJobProgram", "prompt": "Prestart Job程式名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.PRESTART_JOB_STATISTICS(SUBSYSTEM_NAME => '{subsystemName}', PRESTART_JOB_PROGRAM_LIBRARY => '{prestartJobProgramLibrary}', PRESTART_JOB_PROGRAM => '{prestartJobProgram}'))"
+  },
+  {
+    "id": "remove_tracked_job_queue_call",
+    "serviceId": "remove_tracked_job_queue",
+    "description": "將工作佇列從Submitted Job Tracker追蹤清單移除",
+    "matchKeywords": [
+      "移除追蹤工作佇列",
+      "remove tracked job queue",
+      "取消工作佇列追蹤"
+    ],
+    "params": [
+      { "name": "iaspName", "prompt": "工作佇列所在ASP名稱，*SYSBAS代表系統ASP或基本使用者ASP", "default": "*SYSBAS", "upper": true },
+      { "name": "jobQueueLibrary", "prompt": "工作佇列所在Library", "required": true, "upper": true },
+      { "name": "jobQueue", "prompt": "要取消追蹤的工作佇列名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.REMOVE_TRACKED_JOB_QUEUE(IASP_NAME => '{iaspName}', JOB_QUEUE_LIBRARY => '{jobQueueLibrary}', JOB_QUEUE => '{jobQueue}')"
+  },
+  {
+    "id": "routing_entry_info_check",
+    "serviceId": "routing_entry_info",
+    "description": "查詢子系統的路由項目設定",
+    "matchKeywords": [
+      "路由項目查詢",
+      "routing entry info",
+      "dspsbsd routing"
+    ],
+    "params": [
+      { "name": "subsystemDescriptionLibrary", "prompt": "子系統描述所在Library", "required": true, "upper": true },
+      { "name": "subsystemDescription", "prompt": "子系統描述名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.ROUTING_ENTRY_INFO WHERE SUBSYSTEM_DESCRIPTION_LIBRARY = '{subsystemDescriptionLibrary}' AND SUBSYSTEM_DESCRIPTION = '{subsystemDescription}'"
+  },
+  {
+    "id": "scheduled_job_info_check",
+    "serviceId": "scheduled_job_info",
+    "description": "查詢工作排程(Job Schedule)項目",
+    "matchKeywords": [
+      "工作排程查詢",
+      "scheduled job info",
+      "wrkjobscde查詢",
+      "查已過期未執行的排程"
+    ],
+    "params": [
+      { "name": "status", "prompt": "篩選狀態，留空查全部", "default": "", "options": ["", "HELD", "SAVED", "SCHEDULED"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SCHEDULED_JOB_INFO WHERE (STATUS = '{status}' OR '{status}' = '') ORDER BY SCHEDULED_BY"
+  },
+  {
+    "id": "subsystem_info_check",
+    "serviceId": "subsystem_info",
+    "description": "查詢所有子系統的狀態",
+    "matchKeywords": [
+      "子系統狀態查詢",
+      "subsystem info",
+      "wrksbs查詢"
+    ],
+    "params": [
+      { "name": "status", "prompt": "篩選狀態，留空查全部", "default": "", "options": ["", "ACTIVE", "ENDING", "INACTIVE", "RESTRICTED", "STARTING"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SUBSYSTEM_INFO WHERE (STATUS = '{status}' OR '{status}' = '')"
+  },
+  {
+    "id": "subsystem_pool_info_check",
+    "serviceId": "subsystem_pool_info",
+    "description": "查詢子系統定義的儲存池資訊",
+    "matchKeywords": [
+      "子系統儲存池查詢",
+      "subsystem pool info",
+      "wrksbs pool查詢"
+    ],
+    "params": [
+      { "name": "subsystemDescriptionLibrary", "prompt": "子系統描述所在Library", "required": true, "upper": true },
+      { "name": "subsystemDescription", "prompt": "子系統描述名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SUBSYSTEM_POOL_INFO WHERE SUBSYSTEM_DESCRIPTION_LIBRARY = '{subsystemDescriptionLibrary}' AND SUBSYSTEM_DESCRIPTION = '{subsystemDescription}'"
+  },
+  {
+    "id": "tracked_job_info_check",
+    "serviceId": "tracked_job_info",
+    "description": "查詢Submitted Job Tracker追蹤到的工作詳細資訊",
+    "matchKeywords": [
+      "追蹤工作詳細資訊",
+      "tracked job info",
+      "查追蹤中的工作"
+    ],
+    "params": [
+      { "name": "jobQueueLibraryFilter", "prompt": "限定工作佇列所在Library，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "jobQueueFilter", "prompt": "限定工作佇列名稱，留空不篩選", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.TRACKED_JOB_INFO(JOB_QUEUE_LIBRARY_FILTER => NULLIF('{jobQueueLibraryFilter}', ''), JOB_QUEUE_FILTER => NULLIF('{jobQueueFilter}', ''))) X WHERE JOB_END_TIME IS NULL"
+  },
+  {
+    "id": "tracked_job_queues_check",
+    "serviceId": "tracked_job_queues",
+    "description": "查詢已註冊追蹤的工作佇列清單",
+    "matchKeywords": [
+      "追蹤工作佇列清單",
+      "tracked job queues",
+      "查哪些佇列有被追蹤"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.TRACKED_JOB_QUEUES ORDER BY IASP_NAME, JOB_QUEUE_LIBRARY, JOB_QUEUE"
+  },
+  {
+    "id": "watch_detail_check",
+    "serviceId": "watch_detail",
+    "description": "查詢監看工作階段的詳細監看項目",
+    "matchKeywords": [
+      "監看詳細項目查詢",
+      "watch detail",
+      "wrkwch詳細"
+    ],
+    "params": [
+      { "name": "sessionId", "prompt": "監看工作階段的Session ID", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.WATCH_DETAIL('{sessionId}'))"
+  },
+  {
+    "id": "watch_info_check",
+    "serviceId": "watch_info",
+    "description": "查詢系統上監看(Watch)工作階段",
+    "matchKeywords": [
+      "監看工作階段查詢",
+      "watch info",
+      "wrkwch查詢",
+      "查系統監看/追蹤設定"
+    ],
+    "params": [
+      { "name": "watchSessionType", "prompt": "監看類型，留空查全部", "default": "", "options": ["", "*SRVMON", "*STRWCH", "*TRCCMD"] },
+      { "name": "status", "prompt": "狀態，留空查全部", "default": "", "options": ["", "ACTIVE", "ENDING"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.WATCH_INFO WHERE (WATCH_SESSION_TYPE = '{watchSessionType}' OR '{watchSessionType}' = '') AND (STATUS = '{status}' OR '{status}' = '')"
+  },
+  {
+    "id": "active_db_connections_check",
+    "serviceId": "active_db_connections",
+    "description": "查詢工作的DRDA/DDM/Db2 Mirror連線資訊",
+    "matchKeywords": [
+      "資料庫連線查詢",
+      "active db connections",
+      "drda連線查詢",
+      "ddm連線查詢"
+    ],
+    "params": [
+      { "name": "jobName", "prompt": "工作名稱，* 代表目前工作", "default": "*" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.ACTIVE_DB_CONNECTIONS('{jobName}'))"
+  },
+  {
+    "id": "asp_job_info_check",
+    "serviceId": "asp_job_info",
+    "description": "查詢獨立ASP(IASP)裡活躍的工作",
+    "matchKeywords": [
+      "iasp工作查詢",
+      "asp job info",
+      "獨立asp工作負載"
+    ],
+    "params": [
+      { "name": "iaspName", "prompt": "IASP名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT JOB_NAME, JOB_STATUS, JOB_TYPE, AUTHORIZATION_NAME FROM QSYS2.ASP_JOB_INFO WHERE IASP_NAME = '{iaspName}'"
+  },
+  {
+    "id": "collection_services_info_check",
+    "serviceId": "collection_services_info",
+    "description": "查詢效能資料收集服務(Collection Services)組態",
+    "matchKeywords": [
+      "效能收集設定查詢",
+      "collection services info",
+      "cfgpfrcol查詢"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.COLLECTION_SERVICES_INFO"
+  },
+  {
+    "id": "memory_pool_check",
+    "serviceId": "memory_pool",
+    "description": "查詢記憶體儲存池即時效能統計",
+    "matchKeywords": [
+      "記憶體儲存池統計",
+      "memory pool",
+      "wrksyssts儲存池"
+    ],
+    "params": [
+      { "name": "resetStatistics", "prompt": "是否重設統計基準點", "default": "NO", "options": ["NO", "YES"] }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.MEMORY_POOL(RESET_STATISTICS => '{resetStatistics}')) X"
+  },
+  {
+    "id": "memory_pool_info_check",
+    "serviceId": "memory_pool_info",
+    "description": "查詢作用中記憶體儲存池資訊",
+    "matchKeywords": [
+      "作用中儲存池查詢",
+      "memory pool info"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.MEMORY_POOL_INFO"
+  },
+  {
+    "id": "process_system_limits_alerts_call",
+    "serviceId": "process_system_limits_alerts",
+    "description": "手動觸發檢查系統限制警示並清理相關表格",
+    "matchKeywords": [
+      "觸發系統限制警示",
+      "process system limits alerts",
+      "sql7062",
+      "手動檢查系統限制"
+    ],
+    "params": [],
+    "sqlTemplate": "CALL QSYS2.PROCESS_SYSTEM_LIMITS_ALERTS()"
+  },
+  {
+    "id": "smapp_access_paths_check",
+    "serviceId": "smapp_access_paths",
+    "description": "查詢SMAPP存取路徑保護狀態",
+    "matchKeywords": [
+      "smapp存取路徑查詢",
+      "smapp access paths",
+      "存取路徑保護狀態"
+    ],
+    "params": [
+      { "name": "libName", "prompt": "限定Library，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SMAPP_ACCESS_PATHS WHERE (LIB_NAME = '{libName}' OR '{libName}' = '') AND STATUS <> 'PROTECTED' ORDER BY ESTIMATED_RECOVERY DESC"
+  },
+  {
+    "id": "syslimits_check",
+    "serviceId": "syslimits",
+    "description": "查詢系統限制值消耗狀況",
+    "matchKeywords": [
+      "系統限制查詢",
+      "syslimits",
+      "system limits查詢",
+      "接近上限的物件"
+    ],
+    "params": [
+      { "name": "limitId", "prompt": "限制ID(Limit ID)，例如19000=工作數上限、15000=資料表列數上限", "required": true }
+    ],
+    "sqlTemplate": "SELECT LAST_CHANGE_TIMESTAMP, CURRENT_VALUE, MAXIMUM_VALUE FROM QSYS2.SYSLIMITS WHERE LIMIT_ID = {limitId} ORDER BY CURRENT_VALUE DESC"
+  },
+  {
+    "id": "syslimits_basic_check",
+    "serviceId": "syslimits_basic",
+    "description": "查詢系統限制值消耗狀況(精簡版)",
+    "matchKeywords": [
+      "系統限制精簡查詢",
+      "syslimits basic",
+      "system limits basic查詢"
+    ],
+    "params": [
+      { "name": "limitId", "prompt": "限制ID(Limit ID)，例如19000=工作數上限、15000=資料表列數上限", "required": true }
+    ],
+    "sqlTemplate": "SELECT LAST_CHANGE_TIMESTAMP, CURRENT_VALUE, MAXIMUM_VALUE FROM QSYS2.SYSLIMITS_BASIC WHERE LIMIT_ID = {limitId} ORDER BY CURRENT_VALUE DESC"
+  },
+  {
+    "id": "syslimtbl_check",
+    "serviceId": "syslimtbl",
+    "description": "查詢系統限制值底層資料表",
+    "matchKeywords": [
+      "syslimtbl查詢",
+      "系統限制底層資料表"
+    ],
+    "params": [
+      { "name": "limitId", "prompt": "限制ID(Limit ID)", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SYSLIMTBL WHERE LIMIT_ID = {limitId} ORDER BY LAST_CHANGE_TIMESTAMP DESC"
+  },
+  {
+    "id": "system_activity_info_check",
+    "serviceId": "system_activity_info",
+    "description": "查詢CPU使用率統計資訊",
+    "matchKeywords": [
+      "cpu使用率查詢",
+      "system activity info",
+      "wrksysact查詢"
+    ],
+    "params": [
+      { "name": "delaySeconds", "prompt": "兩次取樣間隔秒數，留空預設1秒", "default": "1" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.SYSTEM_ACTIVITY_INFO(DELAY_SECONDS => {delaySeconds}))"
+  },
+  {
+    "id": "system_status_table_check",
+    "serviceId": "system_status",
+    "description": "查詢目前分區的儲存空間與CPU狀態統計",
+    "matchKeywords": [
+      "分區狀態查詢",
+      "system status",
+      "wrksyssts查詢",
+      "查系統儲存與cpu狀態"
+    ],
+    "params": [
+      { "name": "resetStatistics", "prompt": "是否重設統計基準點", "default": "NO", "options": ["NO", "YES"] },
+      { "name": "detailedInfo", "prompt": "詳細程度", "default": "BASIC", "options": ["BASIC", "ALL"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.SYSTEM_STATUS(RESET_STATISTICS => '{resetStatistics}', DETAILED_INFO => '{detailedInfo}')) X"
+  },
+  {
+    "id": "system_status_info_basic_check",
+    "serviceId": "system_status_info_basic",
+    "description": "查詢目前分區的基本狀態資訊",
+    "matchKeywords": [
+      "分區基本狀態查詢",
+      "system status info basic",
+      "簡易系統狀態查詢"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT TOTAL_JOBS_IN_SYSTEM, ACTIVE_JOBS_IN_SYSTEM, MAIN_STORAGE_SIZE, SYSTEM_ASP_USED FROM QSYS2.SYSTEM_STATUS_INFO_BASIC"
+  },
+  {
+    "id": "systmpstg_check",
+    "serviceId": "systmpstg",
+    "description": "查詢暫存儲存空間桶使用狀況",
+    "matchKeywords": [
+      "暫存空間桶查詢",
+      "systmpstg",
+      "temporary storage bucket",
+      "查找工作結束未釋放的暫存空間"
+    ],
+    "params": [
+      { "name": "jobStatus", "prompt": "工作桶狀態，留空查全部", "default": "", "options": ["", "*ACTIVE", "*ENDED"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.SYSTMPSTG WHERE (JOB_STATUS = '{jobStatus}' OR '{jobStatus}' = '') ORDER BY BUCKET_CURRENT_SIZE DESC"
+  },
+  {
+    "id": "workload_group_info_check",
+    "serviceId": "workload_group_info",
+    "description": "查詢工作負載群組(Workload Group)資訊",
+    "matchKeywords": [
+      "工作負載群組查詢",
+      "workload group info",
+      "dspwlcgrp查詢"
+    ],
+    "params": [
+      { "name": "workloadGroup", "prompt": "工作負載群組名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.WORKLOAD_GROUP_INFO WHERE (WORKLOAD_GROUP = '{workloadGroup}' OR '{workloadGroup}' = '')"
+  },
+  {
+    "id": "add_user_index_entry_call",
+    "serviceId": "add_user_index_entry",
+    "description": "新增一筆項目到使用者索引(*USRIDX)",
+    "matchKeywords": [
+      "新增使用者索引項目",
+      "add user index entry",
+      "usridx新增"
+    ],
+    "params": [
+      { "name": "userIndex", "prompt": "使用者索引名稱", "required": true, "upper": true },
+      { "name": "userIndexLibrary", "prompt": "使用者索引所在Library", "required": true, "upper": true },
+      { "name": "replace", "prompt": "索引鍵已存在時是否取代", "default": "NO", "options": ["NO", "YES"] },
+      { "name": "key", "prompt": "索引鍵值，非索引鍵式索引請留空", "default": "", "advanced": true },
+      { "name": "entry", "prompt": "項目內容", "required": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.ADD_USER_INDEX_ENTRY(USER_INDEX => '{userIndex}', USER_INDEX_LIBRARY => '{userIndexLibrary}', REPLACE => '{replace}', KEY => NULLIF('{key}', ''), ENTRY => '{entry}')"
+  },
+  {
+    "id": "change_user_space_call",
+    "serviceId": "change_user_space",
+    "description": "在指定位置寫入資料到使用者空間(*USRSPC)",
+    "matchKeywords": [
+      "寫入使用者空間",
+      "change user space",
+      "usrspc寫入資料"
+    ],
+    "params": [
+      { "name": "userSpace", "prompt": "使用者空間名稱", "required": true, "upper": true },
+      { "name": "userSpaceLibrary", "prompt": "使用者空間所在Library", "required": true, "upper": true },
+      { "name": "data", "prompt": "要寫入的資料", "required": true },
+      { "name": "startPosition", "prompt": "寫入起始位置，留空預設1", "default": "1" }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_USER_SPACE(USER_SPACE => '{userSpace}', USER_SPACE_LIBRARY => '{userSpaceLibrary}', DATA => '{data}', START_POSITION => {startPosition})"
+  },
+  {
+    "id": "change_user_space_attributes_call",
+    "serviceId": "change_user_space_attributes",
+    "description": "變更使用者空間(*USRSPC)的大小等屬性",
+    "matchKeywords": [
+      "變更使用者空間屬性",
+      "change user space attributes",
+      "usrspc變更大小"
+    ],
+    "params": [
+      { "name": "userSpace", "prompt": "使用者空間名稱", "required": true, "upper": true },
+      { "name": "userSpaceLibrary", "prompt": "使用者空間所在Library", "required": true, "upper": true },
+      { "name": "size", "prompt": "新的大小(bytes)，1~16773120，留空代表不變更", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_USER_SPACE_ATTRIBUTES(USER_SPACE => '{userSpace}', USER_SPACE_LIBRARY => '{userSpaceLibrary}', SIZE => NULLIF('{size}', ''))"
+  },
+  {
+    "id": "create_user_index_call",
+    "serviceId": "create_user_index",
+    "description": "建立(或取代)一個使用者索引(*USRIDX)",
+    "matchKeywords": [
+      "建立使用者索引",
+      "create user index",
+      "新建usridx"
+    ],
+    "params": [
+      { "name": "userIndex", "prompt": "使用者索引名稱", "required": true, "upper": true },
+      { "name": "userIndexLibrary", "prompt": "要建立在哪個Library", "required": true, "upper": true },
+      { "name": "entryType", "prompt": "項目型態", "default": "VARIABLE", "options": ["VARIABLE", "FIXED"] },
+      { "name": "keyLength", "prompt": "索引鍵長度，0代表非索引鍵式", "default": "0" },
+      { "name": "publicAuthority", "prompt": "公開權限", "default": "*LIBCRTAUT", "options": ["*LIBCRTAUT", "*ALL", "*CHANGE", "*USE", "*EXCLUDE"], "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CREATE_USER_INDEX(USER_INDEX => '{userIndex}', USER_INDEX_LIBRARY => '{userIndexLibrary}', ENTRY_TYPE => '{entryType}', KEY_LENGTH => {keyLength}, PUBLIC_AUTHORITY => '{publicAuthority}')"
+  },
+  {
+    "id": "create_user_space_call",
+    "serviceId": "create_user_space",
+    "description": "建立(或取代)一個使用者空間(*USRSPC)",
+    "matchKeywords": [
+      "建立使用者空間",
+      "create user space",
+      "新建usrspc"
+    ],
+    "params": [
+      { "name": "userSpace", "prompt": "使用者空間名稱", "required": true, "upper": true },
+      { "name": "userSpaceLibrary", "prompt": "要建立在哪個Library", "required": true, "upper": true },
+      { "name": "size", "prompt": "初始大小(bytes)，1~16773120", "required": true },
+      { "name": "publicAuthority", "prompt": "公開權限", "default": "*LIBCRTAUT", "options": ["*LIBCRTAUT", "*ALL", "*CHANGE", "*USE", "*EXCLUDE"], "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CREATE_USER_SPACE(USER_SPACE => '{userSpace}', USER_SPACE_LIBRARY => '{userSpaceLibrary}', SIZE => {size}, PUBLIC_AUTHORITY => '{publicAuthority}')"
+  },
+  {
+    "id": "remove_user_index_entry_check",
+    "serviceId": "remove_user_index_entry",
+    "description": "依條件從使用者索引(*USRIDX)移除項目",
+    "matchKeywords": [
+      "移除使用者索引項目",
+      "remove user index entry",
+      "usridx刪除項目"
+    ],
+    "params": [
+      { "name": "userIndex", "prompt": "使用者索引名稱", "required": true, "upper": true },
+      { "name": "userIndexLibrary", "prompt": "使用者索引所在Library", "required": true, "upper": true },
+      { "name": "operation", "prompt": "比對條件", "default": "EQ", "options": ["EQ", "GE", "GT", "LE", "LT", "BETWEEN", "FIRST", "LAST"] },
+      { "name": "removeValue", "prompt": "比對值，FIRST/LAST時可留空", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.REMOVE_USER_INDEX_ENTRY(USER_INDEX => '{userIndex}', USER_INDEX_LIBRARY => '{userIndexLibrary}', OPERATION => '{operation}', REMOVE_VALUE => NULLIF('{removeValue}', '')))"
+  },
+  {
+    "id": "user_index_entries_check",
+    "serviceId": "user_index_entries",
+    "description": "查詢使用者索引(*USRIDX)裡的全部項目",
+    "matchKeywords": [
+      "使用者索引項目查詢",
+      "user index entries",
+      "usridx內容查詢"
+    ],
+    "params": [
+      { "name": "userIndex", "prompt": "使用者索引名稱", "required": true, "upper": true },
+      { "name": "userIndexLibrary", "prompt": "使用者索引所在Library", "default": "*LIBL", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.USER_INDEX_ENTRIES(USER_INDEX => '{userIndex}', USER_INDEX_LIBRARY => '{userIndexLibrary}')) ORDER BY ORDINAL_POSITION"
+  },
+  {
+    "id": "user_index_info_check",
+    "serviceId": "user_index_info",
+    "description": "查詢使用者索引(*USRIDX)的屬性",
+    "matchKeywords": [
+      "使用者索引屬性查詢",
+      "user index info",
+      "usridx屬性"
+    ],
+    "params": [
+      { "name": "userIndexLibrary", "prompt": "使用者索引所在Library，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.USER_INDEX_INFO WHERE (USER_INDEX_LIBRARY = '{userIndexLibrary}' OR '{userIndexLibrary}' = '')"
+  },
+  {
+    "id": "user_space_check",
+    "serviceId": "user_space",
+    "description": "查詢使用者空間(*USRSPC)的完整內容",
+    "matchKeywords": [
+      "使用者空間內容查詢",
+      "user space",
+      "usrspc內容查詢"
+    ],
+    "params": [
+      { "name": "userSpace", "prompt": "使用者空間名稱", "required": true, "upper": true },
+      { "name": "userSpaceLibrary", "prompt": "使用者空間所在Library", "default": "*LIBL", "upper": true }
+    ],
+    "sqlTemplate": "SELECT DATA_BINARY FROM TABLE(QSYS2.USER_SPACE(USER_SPACE => '{userSpace}', USER_SPACE_LIBRARY => '{userSpaceLibrary}'))"
+  },
+  {
+    "id": "user_space_info_check",
+    "serviceId": "user_space_info",
+    "description": "查詢使用者空間(*USRSPC)的屬性",
+    "matchKeywords": [
+      "使用者空間屬性查詢",
+      "user space info",
+      "usrspc屬性"
+    ],
+    "params": [
+      { "name": "userSpaceLibrary", "prompt": "使用者空間所在Library，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT USER_SPACE, SIZE, TEXT_DESCRIPTION FROM QSYS2.USER_SPACE_INFO WHERE (USER_SPACE_LIBRARY = '{userSpaceLibrary}' OR '{userSpaceLibrary}' = '')"
+  },
+  {
+    "id": "add_user_index_entry_binary_call",
+    "serviceId": "add_user_index_entry_binary",
+    "description": "新增一筆二進位項目到使用者索引(*USRIDX)",
+    "matchKeywords": [
+      "新增使用者索引二進位項目",
+      "add user index entry binary",
+      "usridx新增binary"
+    ],
+    "params": [
+      { "name": "userIndex", "prompt": "使用者索引名稱", "required": true, "upper": true },
+      { "name": "userIndexLibrary", "prompt": "使用者索引所在Library", "required": true, "upper": true },
+      { "name": "replace", "prompt": "索引鍵已存在時是否取代", "default": "NO", "options": ["NO", "YES"] },
+      { "name": "entry", "prompt": "項目內容(16進位格式，例如0102030405)", "required": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.ADD_USER_INDEX_ENTRY_BINARY(USER_INDEX => '{userIndex}', USER_INDEX_LIBRARY => '{userIndexLibrary}', REPLACE => '{replace}', ENTRY => BX'{entry}')"
+  },
+  {
+    "id": "change_user_space_binary_call",
+    "serviceId": "change_user_space_binary",
+    "description": "在指定位置寫入二進位資料到使用者空間(*USRSPC)",
+    "matchKeywords": [
+      "寫入使用者空間二進位資料",
+      "change user space binary",
+      "usrspc寫入binary"
+    ],
+    "params": [
+      { "name": "userSpace", "prompt": "使用者空間名稱", "required": true, "upper": true },
+      { "name": "userSpaceLibrary", "prompt": "使用者空間所在Library", "required": true, "upper": true },
+      { "name": "data", "prompt": "要寫入的資料(16進位格式，例如0102030405)", "required": true },
+      { "name": "startPosition", "prompt": "寫入起始位置，留空預設1", "default": "1" }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_USER_SPACE_BINARY(USER_SPACE => '{userSpace}', USER_SPACE_LIBRARY => '{userSpaceLibrary}', DATA => BX'{data}', START_POSITION => {startPosition})"
+  },
+  {
+    "id": "remove_user_index_entry_binary_check",
+    "serviceId": "remove_user_index_entry_binary",
+    "description": "依條件從使用者索引(*USRIDX)移除二進位項目",
+    "matchKeywords": [
+      "移除使用者索引二進位項目",
+      "remove user index entry binary",
+      "usridx刪除binary"
+    ],
+    "params": [
+      { "name": "userIndex", "prompt": "使用者索引名稱", "required": true, "upper": true },
+      { "name": "userIndexLibrary", "prompt": "使用者索引所在Library", "required": true, "upper": true },
+      { "name": "operation", "prompt": "比對條件", "default": "FIRST", "options": ["EQ", "GE", "GT", "LE", "LT", "BETWEEN", "FIRST", "LAST"] },
+      { "name": "maxRemove", "prompt": "最多移除筆數，-1代表全部", "default": "-1", "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.REMOVE_USER_INDEX_ENTRY_BINARY(USER_INDEX => '{userIndex}', USER_INDEX_LIBRARY => '{userIndexLibrary}', OPERATION => '{operation}', MAX_REMOVE => {maxRemove}))"
+  },
+  {
+    "id": "asp_vary_info_check",
+    "serviceId": "asp_vary_info",
+    "description": "查詢獨立ASP的vary on/vary off操作步驟",
+    "matchKeywords": [
+      "asp vary查詢",
+      "asp vary info",
+      "iasp vary on耗時分析",
+      "dspaspsts查詢"
+    ],
+    "params": [
+      { "name": "operationType", "prompt": "操作類型，留空查全部", "default": "", "options": ["", "VARY ON", "VARY OFF"] }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.ASP_VARY_INFO WHERE (OPERATION_TYPE = '{operationType}' OR '{operationType}' = '') ORDER BY IASP_NAME, DURATION DESC"
+  },
+  {
+    "id": "change_disk_paths_call",
+    "serviceId": "change_disk_paths",
+    "description": "啟用或停用符合條件的磁碟路徑",
+    "matchKeywords": [
+      "啟用停用磁碟路徑",
+      "change disk paths",
+      "多重路徑停用啟用"
+    ],
+    "params": [
+      { "name": "operation", "prompt": "操作", "default": "ENABLE", "options": ["ENABLE", "DISABLE"] },
+      { "name": "resourceName", "prompt": "資源名稱，留空代表用WWPN/介面卡條件比對", "default": "", "upper": true },
+      { "name": "force", "prompt": "停用時是否允許停用最後一條路徑", "default": "NO", "options": ["NO", "YES"], "advanced": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_DISK_PATHS(OPERATION => '{operation}', RESOURCE_NAME => NULLIF('{resourceName}', ''), FORCE => '{force}')"
+  },
+  {
+    "id": "change_iop_call",
+    "serviceId": "change_iop",
+    "description": "對I/O處理器(IOP)執行操作(IPL)",
+    "matchKeywords": [
+      "iop ipl",
+      "change iop",
+      "iscsi虛擬iop重啟"
+    ],
+    "params": [
+      { "name": "iop", "prompt": "I/O處理器識別，ISCSI代表iSCSI虛擬IOP", "default": "ISCSI", "upper": true },
+      { "name": "option", "prompt": "操作", "default": "IPL" }
+    ],
+    "sqlTemplate": "CALL QSYS2.CHANGE_IOP(IOP => '{iop}', OPTION => '{option}')"
+  },
+  {
+    "id": "factory_reset_device_call",
+    "serviceId": "factory_reset_device",
+    "description": "將NVMe裝置重設回原廠設定(會清除資料)",
+    "matchKeywords": [
+      "nvme原廠重設",
+      "factory reset device",
+      "psid重設"
+    ],
+    "params": [
+      { "name": "psidPassword", "prompt": "裝置實體標籤上的PSID值", "required": true },
+      { "name": "resourceName", "prompt": "裝置資源名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.FACTORY_RESET_DEVICE(PSID_PASSWORD => '{psidPassword}', RESOURCE_NAME => '{resourceName}')"
+  },
+  {
+    "id": "geographic_mirroring_info_check",
+    "serviceId": "geographic_mirroring_info",
+    "description": "查詢地理鏡射(Geographic Mirroring)狀態",
+    "matchKeywords": [
+      "地理鏡射查詢",
+      "geographic mirroring info",
+      "iasp高可用性複寫狀態"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.GEOGRAPHIC_MIRRORING_INFO"
+  },
+  {
+    "id": "hardware_resource_info_check",
+    "serviceId": "hardware_resource_info",
+    "description": "查詢已設定硬體資源的詳細資訊",
+    "matchKeywords": [
+      "硬體資源查詢",
+      "hardware resource info",
+      "strsst硬體服務管理"
+    ],
+    "params": [
+      { "name": "resourceCategory", "prompt": "資源類別", "default": "ALL", "options": ["ALL", "ADAPTER", "COMM", "CRYPTO", "OPTICAL", "PROCESSOR", "STORAGE", "TAPE", "WORKSTATION"] },
+      { "name": "detailedInfo", "prompt": "是否回傳詳細資訊(如序號)", "default": "NO", "options": ["NO", "YES"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.HARDWARE_RESOURCE_INFO(RESOURCE_CATEGORY => '{resourceCategory}', DETAILED_INFO => '{detailedInfo}'))"
+  },
+  {
+    "id": "media_library_info_check",
+    "serviceId": "media_library_info",
+    "description": "查詢媒體櫃(Media Library)裝置狀態",
+    "matchKeywords": [
+      "媒體櫃查詢",
+      "media library info",
+      "wrkmlbsts查詢"
+    ],
+    "params": [
+      { "name": "deviceName", "prompt": "裝置名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.MEDIA_LIBRARY_INFO WHERE (DEVICE_NAME = '{deviceName}' OR '{deviceName}' = '')"
+  },
+  {
+    "id": "nvme_info_check",
+    "serviceId": "nvme_info",
+    "description": "查詢NVMe裝置硬體健康狀態",
+    "matchKeywords": [
+      "nvme健康狀態查詢",
+      "nvme info",
+      "nvme硬碟壽命查詢"
+    ],
+    "params": [
+      { "name": "resourceName", "prompt": "資源名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT RESOURCE_NAME, LIFE_REMAINING, SPARE_CAPACITY, DEGRADED FROM QSYS2.NVME_INFO WHERE (RESOURCE_NAME = '{resourceName}' OR '{resourceName}' = '')"
+  },
+  {
+    "id": "sfp_transceiver_info_check",
+    "serviceId": "sfp_transceiver_info",
+    "description": "查詢光纖通道介面卡SFP光收發模組資訊",
+    "matchKeywords": [
+      "sfp光收發模組查詢",
+      "sfp transceiver info",
+      "光纖介面卡溫度電壓查詢"
+    ],
+    "params": [
+      { "name": "resourceName", "prompt": "介面卡資源名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT RESOURCE_NAME, PORT_NUMBER, TEMPERATURE, TX_POWER, RX_POWER FROM QSYS2.SFP_TRANSCEIVER_INFO WHERE (RESOURCE_NAME = '{resourceName}' OR '{resourceName}' = '')"
+  },
+  {
+    "id": "tape_cartridge_info_check",
+    "serviceId": "tape_cartridge_info",
+    "description": "查詢磁帶匣(Tape Cartridge)狀態",
+    "matchKeywords": [
+      "磁帶匣查詢",
+      "tape cartridge info",
+      "dsptapctg查詢"
+    ],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM QSYS2.TAPE_CARTRIDGE_INFO WHERE STATUS <> 'AVAILABLE'"
+  },
+  {
+    "id": "unlock_device_call",
+    "serviceId": "unlock_device",
+    "description": "嘗試解鎖一個被鎖定的NVMe裝置",
+    "matchKeywords": [
+      "解鎖nvme裝置",
+      "unlock device",
+      "nvme裝置解鎖"
+    ],
+    "params": [
+      { "name": "policyPassword", "prompt": "裝置鎖定原則密碼", "required": true },
+      { "name": "resourceName", "prompt": "裝置資源名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "CALL QSYS2.UNLOCK_DEVICE(POLICY_PASSWORD => '{policyPassword}', RESOURCE_NAME => '{resourceName}')"
+  },
+  {
+    "id": "user_storage_check",
+    "serviceId": "user_storage",
+    "description": "查詢使用者的儲存空間與授權項目使用狀況",
+    "matchKeywords": [
+      "使用者儲存空間查詢",
+      "user storage",
+      "使用者授權項目用量"
+    ],
+    "params": [
+      { "name": "authorizationName", "prompt": "使用者名稱，留空查全部", "default": "", "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM QSYS2.USER_STORAGE WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '')"
+  },
+  {
+    "id": "compare_ifs_check",
+    "serviceId": "compare_ifs",
+    "description": "比較兩個IFS物件(或子樹)之間的差異",
+    "matchKeywords": [
+      "ifs比較差異",
+      "compare ifs",
+      "目錄比對",
+      "串流檔比較"
+    ],
+    "params": [
+      { "name": "startPathName1", "prompt": "第一個物件/目錄路徑", "required": true },
+      { "name": "startPathName2", "prompt": "第二個物件/目錄路徑", "required": true },
+      { "name": "subtreeDirectories", "prompt": "是否遞迴比對子目錄", "default": "YES", "options": ["YES", "NO"] },
+      { "name": "compareAttributes", "prompt": "比對方式", "default": "NAMES", "options": ["NAMES", "YES"] }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.COMPARE_IFS(START_PATH_NAME1 => '{startPathName1}', START_PATH_NAME2 => '{startPathName2}', SUBTREE_DIRECTORIES => '{subtreeDirectories}', COMPARE_ATTRIBUTES => '{compareAttributes}'))"
+  },
+  {
+    "id": "ifs_job_info_check",
+    "serviceId": "ifs_job_info",
+    "description": "查詢工作目前參照的IFS物件清單",
+    "matchKeywords": [
+      "工作參照ifs物件",
+      "ifs job info",
+      "工作正在使用哪些ifs檔案"
+    ],
+    "params": [
+      { "name": "jobName", "prompt": "工作名稱，* 代表目前工作", "default": "*" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.IFS_JOB_INFO(JOB_NAME => '{jobName}'))"
+  },
+  {
+    "id": "ifs_object_lock_info_check",
+    "serviceId": "ifs_object_lock_info",
+    "description": "查詢IFS物件被哪些工作鎖定",
+    "matchKeywords": [
+      "ifs物件鎖定查詢",
+      "ifs object lock info",
+      "ifs檔案被誰鎖住"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS物件路徑", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.IFS_OBJECT_LOCK_INFO(PATH_NAME => '{pathName}'))"
+  },
+  {
+    "id": "ifs_object_privileges_check",
+    "serviceId": "ifs_object_privileges",
+    "description": "查詢IFS物件的授權使用者清單",
+    "matchKeywords": [
+      "ifs物件授權查詢",
+      "ifs object privileges",
+      "dspaut查詢",
+      "ifs檔案權限查詢"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS物件路徑", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.IFS_OBJECT_PRIVILEGES(PATH_NAME => '{pathName}'))"
+  },
+  {
+    "id": "ifs_object_references_info_check",
+    "serviceId": "ifs_object_references_info",
+    "description": "查詢IFS物件目前的參照彙總統計",
+    "matchKeywords": [
+      "ifs物件參照統計",
+      "ifs object references info",
+      "ifs物件是否使用中"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS物件路徑", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.IFS_OBJECT_REFERENCES_INFO(PATH_NAME => '{pathName}'))"
+  },
+  {
+    "id": "ifs_read_check",
+    "serviceId": "ifs_read",
+    "description": "讀取IFS報表(串流檔)內容(字元)",
+    "matchKeywords": [
+      "讀取ifs檔案",
+      "ifs read",
+      "讀取串流檔內容"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS串流檔路徑", "required": true },
+      { "name": "endOfLine", "prompt": "換行符號判斷方式", "default": "ANY", "options": ["ANY", "CR", "CRLF", "LF", "LFCR", "NONE"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.IFS_READ(PATH_NAME => '{pathName}', END_OF_LINE => '{endOfLine}'))"
+  },
+  {
+    "id": "ifs_read_binary_check",
+    "serviceId": "ifs_read_binary",
+    "description": "讀取IFS串流檔內容(二進位)",
+    "matchKeywords": [
+      "讀取ifs檔案二進位",
+      "ifs read binary",
+      "讀取串流檔原始位元組"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS串流檔路徑", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.IFS_READ_BINARY(PATH_NAME => '{pathName}'))"
+  },
+  {
+    "id": "ifs_read_utf8_check",
+    "serviceId": "ifs_read_utf8",
+    "description": "讀取IFS串流檔內容(UTF-8)",
+    "matchKeywords": [
+      "讀取ifs檔案utf8",
+      "ifs read utf8",
+      "讀取串流檔utf-8內容"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS串流檔路徑", "required": true },
+      { "name": "endOfLine", "prompt": "換行符號判斷方式", "default": "ANY", "options": ["ANY", "CR", "CRLF", "LF", "LFCR", "NONE"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(QSYS2.IFS_READ_UTF8(PATH_NAME => '{pathName}', END_OF_LINE => '{endOfLine}'))"
+  },
+  {
+    "id": "ifs_write_call",
+    "serviceId": "ifs_write",
+    "description": "將字元資料寫入IFS串流檔",
+    "matchKeywords": [
+      "寫入ifs檔案",
+      "ifs write",
+      "寫入串流檔內容"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS串流檔路徑，不存在會自動建立", "required": true },
+      { "name": "line", "prompt": "要寫入的內容", "required": true },
+      { "name": "overwrite", "prompt": "寫入方式", "default": "APPEND", "options": ["APPEND", "REPLACE", "NONE"] }
+    ],
+    "sqlTemplate": "CALL QSYS2.IFS_WRITE(PATH_NAME => '{pathName}', LINE => '{line}', OVERWRITE => '{overwrite}')"
+  },
+  {
+    "id": "ifs_write_binary_call",
+    "serviceId": "ifs_write_binary",
+    "description": "將二進位資料寫入IFS串流檔",
+    "matchKeywords": [
+      "寫入ifs檔案二進位",
+      "ifs write binary",
+      "寫入串流檔binary內容"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS串流檔路徑，不存在會自動建立", "required": true },
+      { "name": "lineHex", "prompt": "要寫入的16進位資料(例如EFBBBF48656C6C6F)", "required": true },
+      { "name": "overwrite", "prompt": "寫入方式", "default": "APPEND", "options": ["APPEND", "REPLACE", "NONE"] }
+    ],
+    "sqlTemplate": "CALL QSYS2.IFS_WRITE_BINARY(PATH_NAME => '{pathName}', LINE => BX'{lineHex}', OVERWRITE => '{overwrite}')"
+  },
+  {
+    "id": "ifs_write_utf8_call",
+    "serviceId": "ifs_write_utf8",
+    "description": "將UTF-8資料寫入IFS串流檔",
+    "matchKeywords": [
+      "寫入ifs檔案utf8",
+      "ifs write utf8",
+      "寫入串流檔utf-8內容"
+    ],
+    "params": [
+      { "name": "pathName", "prompt": "IFS串流檔路徑，不存在會自動建立", "required": true },
+      { "name": "line", "prompt": "要寫入的內容", "required": true },
+      { "name": "overwrite", "prompt": "寫入方式", "default": "APPEND", "options": ["APPEND", "REPLACE", "NONE"] }
+    ],
+    "sqlTemplate": "CALL QSYS2.IFS_WRITE_UTF8(PATH_NAME => '{pathName}', LINE => '{line}', OVERWRITE => '{overwrite}')"
+  },
+  {
+    "id": "delete_old_spooled_files_call",
+    "serviceId": "delete_old_spooled_files",
+    "description": "刪除超過指定天數的舊報表(Spooled File)，可先預覽再刪除",
+    "matchKeywords": ["刪除舊報表", "清理報表", "delete spooled file", "清spool"],
+    "params": [
+      { "name": "days", "prompt": "刪除幾天前的報表(整數)", "required": true },
+      { "name": "pOutputQueueName", "prompt": "限定輸出佇列名稱，留空不篩選", "default": "", "upper": true, "advanced": true },
+      { "name": "preview", "prompt": "是否僅預覽不實際刪除", "default": "YES", "options": ["YES", "NO"] }
+    ],
+    "sqlTemplate": "CALL SYSTOOLS.DELETE_OLD_SPOOLED_FILES(DELETE_OLDER_THAN => CURRENT DATE - {days} DAYS, P_OUTPUT_QUEUE_NAME => NULLIF('{pOutputQueueName}', ''), PREVIEW => '{preview}')"
+  },
+  {
+    "id": "generate_pdf_call",
+    "serviceId": "generate_pdf",
+    "description": "將指定報表(Spooled File)轉成PDF寫入IFS",
+    "matchKeywords": ["報表轉pdf", "spool轉pdf", "generate pdf", "報表產生pdf"],
+    "params": [
+      { "name": "jobName", "prompt": "請輸入完整合格工作名稱(格式: 工作編號/使用者/工作名稱)", "required": true, "upper": true },
+      { "name": "spooledFileName", "prompt": "請輸入報表名稱", "required": true, "upper": true },
+      { "name": "spooledFileNumber", "prompt": "請輸入報表編號", "default": "*LAST", "upper": true, "advanced": true },
+      { "name": "pathName", "prompt": "請輸入輸出PDF的IFS路徑", "required": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.GENERATE_PDF(JOB_NAME => '{jobName}', SPOOLED_FILE_NAME => '{spooledFileName}', SPOOLED_FILE_NUMBER => '{spooledFileNumber}', PATH_NAME => '{pathName}')"
+  },
+  {
+    "id": "generate_spreadsheet_call",
+    "serviceId": "generate_spreadsheet",
+    "description": "將資料表內容匯出成試算表檔案(csv/xlsx等)寫入IFS",
+    "matchKeywords": ["匯出試算表", "轉excel", "generate spreadsheet", "匯出csv"],
+    "params": [
+      { "name": "pathName", "prompt": "請輸入輸出檔案的IFS路徑", "required": true },
+      { "name": "libraryName", "prompt": "請輸入來源資料表所在 Library", "required": true, "upper": true },
+      { "name": "fileName", "prompt": "請輸入來源資料表名稱", "required": true, "upper": true },
+      { "name": "spreadsheetType", "prompt": "輸出檔案類型", "default": "csv", "options": ["csv", "xlsx", "xls", "ods", "txt"], "advanced": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.GENERATE_SPREADSHEET(PATH_NAME => '{pathName}', LIBRARY_NAME => '{libraryName}', FILE_NAME => '{fileName}', SPREADSHEET_TYPE => '{spreadsheetType}')"
+  },
+  {
+    "id": "printer_file_info_query",
+    "serviceId": "printer_file_info",
+    "description": "查詢印表機檔案(*PRTF物件)的屬性",
+    "matchKeywords": ["印表機檔案", "printer file", "prtf屬性", "查印表機檔"],
+    "extract": {
+      "pattern": "([A-Za-z0-9_$#@]+)\\s*/\\s*([A-Za-z0-9_$#@]+)",
+      "groups": ["printerFileLibrary", "printerFile"]
+    },
+    "params": [
+      { "name": "printerFileLibrary", "prompt": "請輸入 Library 名稱", "required": true, "upper": true },
+      { "name": "printerFile", "prompt": "限定印表機檔案名稱，留空查詢該Library下全部", "default": "", "upper": true, "advanced": true }
+    ],
+    "sqlTemplate": "SELECT PRINTER_FILE, TEXT_DESCRIPTION, MAXIMUM_RECORDS, OUTPUT_PRIORITY, FORM_TYPE FROM SYSTOOLS.PRINTER_FILE_INFO WHERE PRINTER_FILE_LIBRARY = '{printerFileLibrary}' AND (PRINTER_FILE = '{printerFile}' OR '{printerFile}' = '')"
+  },
+  {
+    "id": "spooled_file_data_query",
+    "serviceId": "spooled_file_data",
+    "description": "查詢指定報表(Spooled File)的完整內容",
+    "matchKeywords": ["報表內容", "spool內容", "spooled file data", "看報表內容"],
+    "params": [
+      { "name": "jobName", "prompt": "請輸入完整合格工作名稱(格式: 工作編號/使用者/工作名稱)", "required": true, "upper": true },
+      { "name": "spooledFileName", "prompt": "請輸入報表名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.SPOOLED_FILE_DATA(JOB_NAME => '{jobName}', SPOOLED_FILE_NAME => '{spooledFileName}')) ORDER BY ORDINAL_POSITION"
+  },
+  {
+    "id": "end_jobs_call",
+    "serviceId": "end_jobs",
+    "description": "依篩選條件批次結束一批作用中工作",
+    "matchKeywords": ["批次結束工作", "end jobs", "大量結束工作", "endjob"],
+    "params": [
+      { "name": "jobNameFilter", "prompt": "請輸入要結束的工作名稱(可用泛用字元%)", "required": true, "upper": true },
+      { "name": "endOption", "prompt": "結束方式", "default": "*CNTRLD", "options": ["*CNTRLD", "*IMMED"], "advanced": true },
+      { "name": "deleteSpooledFiles", "prompt": "是否同時刪除產生的報表", "default": "NO", "options": ["NO", "YES"], "advanced": true }
+    ],
+    "sqlTemplate": "CALL SYSTOOLS.END_JOBS(JOB_NAME_FILTER => '{jobNameFilter}', END_OPTION => '{endOption}', DELETE_SPOOLED_FILES => '{deleteSpooledFiles}')"
+  },
+  {
+    "id": "ended_job_info_query",
+    "serviceId": "ended_job_info",
+    "description": "查詢已結束工作的歷程資訊，可用來找出過去佔用暫存空間最多的工作",
+    "matchKeywords": ["已結束工作", "ended job", "過去工作紀錄", "誰用最多暫存空間"],
+    "params": [
+      { "name": "topN", "prompt": "取暫存空間用量最高的前幾筆", "default": "10" }
+    ],
+    "sqlTemplate": "SELECT FROM_USER, FROM_JOB, PEAK_TEMPORARY_STORAGE, JOB_ACTIVE_TIME FROM TABLE(SYSTOOLS.ENDED_JOB_INFO()) ORDER BY PEAK_TEMPORARY_STORAGE DESC FETCH FIRST {topN} ROWS ONLY"
+  },
+  {
+    "id": "job_name_extract",
+    "serviceId": "job_name",
+    "description": "從完整合格工作名稱拆出工作名稱部分",
+    "matchKeywords": ["取工作名稱", "job name拆解", "拆解工作名稱"],
+    "params": [
+      { "name": "qualifiedJobName", "prompt": "請輸入完整合格工作名稱(格式: 工作編號/使用者/工作名稱)", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.JOB_NAME('{qualifiedJobName}')"
+  },
+  {
+    "id": "job_name_details_extract",
+    "serviceId": "job_name_details",
+    "description": "從完整合格工作名稱一次拆出工作編號/使用者/工作名稱三部分",
+    "matchKeywords": ["拆解完整工作名稱", "job name details", "工作名稱三部分"],
+    "params": [
+      { "name": "qualifiedJobName", "prompt": "請輸入完整合格工作名稱(格式: 工作編號/使用者/工作名稱)", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.JOB_NAME_DETAILS('{qualifiedJobName}'))"
+  },
+  {
+    "id": "job_number_extract",
+    "serviceId": "job_number",
+    "description": "從完整合格工作名稱拆出工作編號部分",
+    "matchKeywords": ["取工作編號", "job number拆解"],
+    "params": [
+      { "name": "qualifiedJobName", "prompt": "請輸入完整合格工作名稱(格式: 工作編號/使用者/工作名稱)", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.JOB_NUMBER('{qualifiedJobName}')"
+  },
+  {
+    "id": "job_user_extract",
+    "serviceId": "job_user",
+    "description": "從完整合格工作名稱拆出使用者部分",
+    "matchKeywords": ["取工作使用者", "job user拆解"],
+    "params": [
+      { "name": "qualifiedJobName", "prompt": "請輸入完整合格工作名稱(格式: 工作編號/使用者/工作名稱)", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.JOB_USER('{qualifiedJobName}')"
+  },
+  {
+    "id": "job_queue_entries_query",
+    "serviceId": "job_queue_entries",
+    "description": "查詢工作佇列裡每個項目的完整工作屬性設定",
+    "matchKeywords": ["工作佇列項目", "job queue entries", "佇列裡的工作屬性"],
+    "extract": {
+      "pattern": "([A-Za-z0-9_$#@]+)\\s*/\\s*([A-Za-z0-9_$#@]+)",
+      "groups": ["jobQueueLibrary", "jobQueueName"]
+    },
+    "params": [
+      { "name": "jobQueueLibrary", "prompt": "請輸入工作佇列所在 Library", "required": true, "upper": true },
+      { "name": "jobQueueName", "prompt": "請輸入工作佇列名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.JOB_QUEUE_ENTRIES WHERE JOB_QUEUE_LIBRARY = '{jobQueueLibrary}' AND JOB_QUEUE_NAME = '{jobQueueName}'"
+  },
+  {
+    "id": "override_info_query",
+    "serviceId": "override_info",
+    "description": "查詢目前工作在目前呼叫層級生效的檔案重疊(Override)清單",
+    "matchKeywords": ["檔案重疊", "override清單", "dspovr", "override info"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.OVERRIDE_INFO"
+  },
+  {
+    "id": "override_info_all_query",
+    "serviceId": "override_info_all",
+    "description": "查詢目前工作在各呼叫層級的完整檔案重疊(Override)清單(未合併)",
+    "matchKeywords": ["完整override", "override all", "各層級檔案重疊"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.OVERRIDE_INFO_ALL"
+  },
+  {
+    "id": "reply_inquiry_messages_call",
+    "serviceId": "reply_inquiry_messages",
+    "description": "回覆QSYSOPR訊息佇列裡的詢問訊息(Inquiry Message)",
+    "matchKeywords": ["回覆詢問訊息", "reply inquiry", "sndrpy", "回覆qsysopr"],
+    "params": [
+      { "name": "messageId", "prompt": "請輸入訊息識別碼(Message ID)", "required": true, "upper": true },
+      { "name": "response", "prompt": "請輸入回覆內容(例如 G/C/I)", "required": true, "upper": true },
+      { "name": "removeMessage", "prompt": "回覆後是否移除訊息", "default": "NO", "options": ["NO", "YES"], "advanced": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.REPLY_INQUIRY_MESSAGES(MESSAGE_ID => '{messageId}', RESPONSE => '{response}', REMOVE_MESSAGE => '{removeMessage}')"
+  },
+  {
+    "id": "ping_check",
+    "serviceId": "ping",
+    "description": "測試與遠端系統的TCP/IP連線狀態",
+    "matchKeywords": ["ping", "測試連線", "連線測試", "vfytcpcnn"],
+    "params": [
+      { "name": "remoteSystem", "prompt": "請輸入遠端系統名稱或IP", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.PING('{remoteSystem}'))"
+  },
+  {
+    "id": "delete_old_journal_receivers_call",
+    "serviceId": "delete_old_journal_receivers",
+    "description": "刪除超過指定天數的已卸離日誌接收者(Journal Receiver)，可先預覽再刪除",
+    "matchKeywords": ["刪除舊日誌接收者", "清理journal receiver", "delete journal receivers"],
+    "params": [
+      { "name": "days", "prompt": "刪除幾天前的日誌接收者(整數)", "required": true },
+      { "name": "journalReceiverLibrary", "prompt": "限定程式庫，留空為 *ALL", "default": "*ALL", "upper": true, "advanced": true },
+      { "name": "preview", "prompt": "是否僅預覽不實際刪除", "default": "YES", "options": ["YES", "NO"] }
+    ],
+    "sqlTemplate": "CALL SYSTOOLS.DELETE_OLD_JOURNAL_RECEIVERS(DELETE_OLDER_THAN => CURRENT DATE - {days} DAYS, JOURNAL_RECEIVER_LIBRARY => '{journalReceiverLibrary}', PREVIEW => '{preview}')"
+  },
+  {
+    "id": "add_validation_list_entry_call",
+    "serviceId": "add_validation_list_entry",
+    "description": "將一筆項目加入驗證清單(Validation List)",
+    "matchKeywords": ["加入驗證清單", "validation list", "新增驗證項目"],
+    "params": [
+      { "name": "validationListLibrary", "prompt": "驗證清單所在Library", "required": true, "upper": true },
+      { "name": "validationListName", "prompt": "請輸入驗證清單名稱", "required": true, "upper": true },
+      { "name": "validationUser", "prompt": "請輸入使用者名稱(最長100字元)", "required": true },
+      { "name": "password", "prompt": "請輸入密碼(最長600字元)", "required": true },
+      { "name": "entryData", "prompt": "附加資料，留空不設定", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.ADD_VALIDATION_LIST_ENTRY(VALIDATION_LIST_LIBRARY => '{validationListLibrary}', VALIDATION_LIST_NAME => '{validationListName}', VALIDATION_USER => '{validationUser}', PASSWORD => '{password}', ENTRY_DATA => NULLIF('{entryData}', ''))"
+  },
+  {
+    "id": "change_validation_list_entry_call",
+    "serviceId": "change_validation_list_entry",
+    "description": "變更驗證清單(Validation List)裡既有項目的密碼",
+    "matchKeywords": ["變更驗證清單", "change validation list", "改驗證項目密碼"],
+    "params": [
+      { "name": "validationListLibrary", "prompt": "驗證清單所在Library", "required": true, "upper": true },
+      { "name": "validationListName", "prompt": "請輸入驗證清單名稱", "required": true, "upper": true },
+      { "name": "validationUser", "prompt": "請輸入既有的使用者名稱", "required": true },
+      { "name": "password", "prompt": "請輸入新密碼(最長600字元)，留空不變更", "default": "", "advanced": true },
+      { "name": "entryData", "prompt": "新附加資料，留空不變更", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.CHANGE_VALIDATION_LIST_ENTRY(VALIDATION_LIST_LIBRARY => '{validationListLibrary}', VALIDATION_LIST_NAME => '{validationListName}', VALIDATION_USER => '{validationUser}', PASSWORD => NULLIF('{password}', ''), ENTRY_DATA => NULLIF('{entryData}', ''))"
+  },
+  {
+    "id": "remove_validation_list_entry_call",
+    "serviceId": "remove_validation_list_entry",
+    "description": "從驗證清單(Validation List)移除一筆項目",
+    "matchKeywords": ["移除驗證清單項目", "remove validation list", "刪除驗證項目"],
+    "params": [
+      { "name": "validationListLibrary", "prompt": "驗證清單所在Library", "required": true, "upper": true },
+      { "name": "validationListName", "prompt": "請輸入驗證清單名稱", "required": true, "upper": true },
+      { "name": "validationUser", "prompt": "請輸入要移除的使用者名稱", "required": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.REMOVE_VALIDATION_LIST_ENTRY(VALIDATION_LIST_LIBRARY => '{validationListLibrary}', VALIDATION_LIST_NAME => '{validationListName}', VALIDATION_USER => '{validationUser}')"
+  },
+  {
+    "id": "change_user_profile_call",
+    "serviceId": "change_user_profile",
+    "description": "變更使用者描述檔部分屬性(對應CHGUSRPRF)，可先預覽再實際執行",
+    "matchKeywords": ["變更使用者描述檔", "chgusrprf", "change user profile", "改使用者狀態"],
+    "params": [
+      { "name": "userName", "prompt": "請輸入使用者描述檔名稱", "required": true, "upper": true },
+      { "name": "status", "prompt": "要變更的狀態，留空不變更", "default": "*SAME", "options": ["*SAME", "*ENABLED", "*DISABLED"], "advanced": true },
+      { "name": "preview", "prompt": "是否僅預覽不實際變更", "default": "YES", "options": ["YES", "NO"] }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.CHANGE_USER_PROFILE(P_USER_NAME => '{userName}', P_STATUS => '{status}', PREVIEW => '{preview}'))"
+  },
+  {
+    "id": "user_drda_authentication_entries_query",
+    "serviceId": "user_drda_authentication_entries",
+    "description": "查詢指定使用者的DRDA伺服器驗證項目清單",
+    "matchKeywords": ["drda驗證項目", "user drda authentication", "addsvraute查詢"],
+    "params": [
+      { "name": "userName", "prompt": "請輸入使用者描述檔名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.USER_DRDA_AUTHENTICATION_ENTRIES('{userName}'))"
+  },
+  {
+    "id": "special_authority_data_mart_query",
+    "serviceId": "special_authority_data_mart",
+    "description": "更新並查詢擁有特定特殊權限(Special Authority)的使用者清單",
+    "matchKeywords": ["特殊權限清單", "special authority", "誰有allobj權限", "查特殊權限"],
+    "params": [
+      { "name": "specialAuthority", "prompt": "限定特殊權限值", "default": "*ALLOBJ", "options": ["*ALLOBJ", "*AUDIT", "*IOSYSCFG", "*JOBCTL", "*SAVSYS", "*SECADM", "*SERVICE", "*SPLCTL"] }
+    ],
+    "sqlTemplate": "REFRESH TABLE SYSTOOLS.SPECIAL_AUTHORITY_DATA_MART;\nSELECT DISTINCT USER_NAME FROM SYSTOOLS.SPECIAL_AUTHORITY_DATA_MART WHERE SPECIAL_AUTHORITY = '{specialAuthority}'"
+  },
+  {
+    "id": "problem_info_query",
+    "serviceId": "problem_info",
+    "description": "查詢最近幾天內記錄的系統問題日誌(Problem Log)",
+    "matchKeywords": ["問題日誌", "problem log", "dspprb", "系統問題紀錄"],
+    "params": [
+      { "name": "days", "prompt": "查詢最近幾天內的問題", "default": "2" }
+    ],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.PROBLEM_INFO WHERE OPEN_TIME > CURRENT TIMESTAMP - {days} DAYS"
+  },
+  {
+    "id": "ifs_access_check",
+    "serviceId": "ifs_access",
+    "description": "檢查目前工作對指定IFS路徑的存取權限",
+    "matchKeywords": ["ifs存取權限", "ifs_access", "檢查檔案權限", "路徑可否讀取"],
+    "params": [
+      { "name": "pathName", "prompt": "請輸入IFS路徑", "required": true },
+      { "name": "read", "prompt": "檢查讀取權限", "default": "YES", "options": ["NO", "YES"] },
+      { "name": "write", "prompt": "檢查寫入權限", "default": "NO", "options": ["NO", "YES"] },
+      { "name": "execute", "prompt": "檢查執行權限", "default": "NO", "options": ["NO", "YES"] }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.IFS_ACCESS(PATH_NAME => '{pathName}', READ => '{read}', WRITE => '{write}', EXECUTE => '{execute}')"
+  },
+  {
+    "id": "ifs_path_extract",
+    "serviceId": "ifs_path",
+    "description": "從IFS路徑字串取出指定部分(副檔名/檔名/路徑前綴等)",
+    "matchKeywords": ["取路徑部分", "ifs_path", "拆解ifs路徑", "取副檔名"],
+    "params": [
+      { "name": "pathName", "prompt": "請輸入IFS路徑", "required": true },
+      { "name": "subsection", "prompt": "要取出的部分", "default": "FILE NAME", "options": ["FILE EXTENSION", "FILE NAME", "FILE PREFIX", "PATH PREFIX"] }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.IFS_PATH(PATH_NAME => '{pathName}', SUBSECTION => '{subsection}')"
+  },
+  {
+    "id": "ifs_rename_call",
+    "serviceId": "ifs_rename",
+    "description": "重新命名IFS裡的檔案或目錄",
+    "matchKeywords": ["ifs改名", "ifs_rename", "重新命名檔案", "改路徑名稱"],
+    "params": [
+      { "name": "fromObject", "prompt": "請輸入原路徑", "required": true },
+      { "name": "toObject", "prompt": "請輸入新路徑", "required": true },
+      { "name": "replace", "prompt": "若目標已存在是否取代", "default": "NO", "options": ["NO", "YES"] }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.IFS_RENAME(FROM_OBJECT => '{fromObject}', TO_OBJECT => '{toObject}', REPLACE => '{replace}')"
+  },
+  {
+    "id": "ifs_unlink_call",
+    "serviceId": "ifs_unlink",
+    "description": "刪除(unlink)一個IFS串流檔",
+    "matchKeywords": ["刪除ifs檔案", "ifs_unlink", "unlink檔案", "刪除串流檔"],
+    "params": [
+      { "name": "pathName", "prompt": "請輸入要刪除的IFS路徑", "required": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.IFS_UNLINK(PATH_NAME => '{pathName}')"
+  },
+  {
+    "id": "cve_info_query",
+    "serviceId": "cve_info",
+    "description": "查詢最近幾天內公告、影響本機IBM i版本的CVE(資安漏洞)清單",
+    "matchKeywords": ["cve查詢", "資安漏洞", "cve_info", "安全漏洞通報"],
+    "params": [
+      { "name": "days", "prompt": "查詢最近幾天內公告的CVE", "default": "30" }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.CVE_INFO()) WHERE PUBLISH_DATE > CURRENT DATE - {days} DAYS"
+  },
+  {
+    "id": "defective_ptf_currency_query",
+    "serviceId": "defective_ptf_currency",
+    "description": "查詢已知的瑕疵PTF但尚未套用修正PTF的清單",
+    "matchKeywords": ["瑕疵ptf", "defective ptf", "有問題的ptf", "ptf瑕疵清單"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.DEFECTIVE_PTF_CURRENCY"
+  },
+  {
+    "id": "firmware_currency_query",
+    "serviceId": "firmware_currency",
+    "description": "比對目前分割區韌體(Firmware)等級與IBM最新公告等級",
+    "matchKeywords": ["韌體等級", "firmware currency", "韌體版本比對", "flrt"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.FIRMWARE_CURRENCY"
+  },
+  {
+    "id": "group_ptf_currency_query",
+    "serviceId": "group_ptf_currency",
+    "description": "比對目前分割區PTF Group等級與IBM PSP網站公告等級",
+    "matchKeywords": ["ptf group比對", "group ptf currency", "ptf群組落後多少", "psp比對"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.GROUP_PTF_CURRENCY ORDER BY PTF_GROUP_LEVEL_AVAILABLE - PTF_GROUP_LEVEL_INSTALLED DESC"
+  },
+  {
+    "id": "group_ptf_currency_local_query",
+    "serviceId": "group_ptf_currency_local",
+    "description": "使用本機IFS上的PSP XML檔案離線比對PTF Group等級",
+    "matchKeywords": ["離線ptf比對", "group ptf currency local", "本機psp比對"],
+    "params": [
+      { "name": "pathName", "prompt": "請輸入本機PSP XML檔案的IFS路徑", "required": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.GROUP_PTF_CURRENCY_LOCAL('{pathName}')) ORDER BY PTF_GROUP_LEVEL_AVAILABLE - PTF_GROUP_LEVEL_INSTALLED DESC"
+  },
+  {
+    "id": "group_ptf_details_query",
+    "serviceId": "group_ptf_details",
+    "description": "查詢PTF Group內尚未套用的PTF明細",
+    "matchKeywords": ["ptf group明細", "group ptf details", "ptf群組內尚未套用", "哪些ptf沒套"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.GROUP_PTF_DETAILS WHERE PTF_STATUS <> 'PTF APPLIED' ORDER BY PTF_GROUP_NAME"
+  },
+  {
+    "id": "ptf_cover_letter_query",
+    "serviceId": "ptf_cover_letter",
+    "description": "查詢指定PTF的封面說明(Cover Letter)內容",
+    "matchKeywords": ["ptf封面說明", "dspptfcvr", "ptf cover letter", "看ptf說明"],
+    "params": [
+      { "name": "ptfId", "prompt": "請輸入PTF識別碼", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.PTF_COVER_LETTER('{ptfId}'))"
+  },
+  {
+    "id": "check_product_options_query",
+    "serviceId": "check_product_options",
+    "description": "檢查所有已安裝軟體產品的結構是否正確",
+    "matchKeywords": ["檢查產品結構", "chkprdopt", "check product options", "產品選項檢查"],
+    "params": [
+      { "name": "checkSignature", "prompt": "數位簽章檢查方式", "default": "*SIGNED", "options": ["*SIGNED", "*ALL", "*NONE"], "advanced": true }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.CHECK_PRODUCT_OPTIONS(CHECK_SIGNATURE => '{checkSignature}'))"
+  },
+  {
+    "id": "license_expiration_check_call",
+    "serviceId": "license_expiration_check",
+    "description": "檢查已安裝產品授權是否即將到期，並送出訊息通知",
+    "matchKeywords": ["授權到期檢查", "license expiration", "軟體授權快過期", "檢查license"],
+    "params": [
+      { "name": "expirationInterval", "prompt": "檢查未來幾天內到期(整數)", "default": "30" }
+    ],
+    "sqlTemplate": "CALL SYSTOOLS.LICENSE_EXPIRATION_CHECK({expirationInterval})"
+  },
+  {
+    "id": "configuration_status_query",
+    "serviceId": "configuration_status",
+    "description": "查詢設定描述(控制器/裝置/線路等)的狀態",
+    "matchKeywords": ["設定描述狀態", "rtvcfgsts", "configuration status", "控制器狀態查詢"],
+    "params": [
+      { "name": "objectType", "prompt": "限定設定描述類型", "default": "*CTLD", "options": ["*CTLD", "*DEVD", "*LIND", "*NWID", "*NWSD"] }
+    ],
+    "sqlTemplate": "SELECT OBJECT_NAME, OBJECT_ATTRIBUTE, STATUS_DESCRIPTION, TEXT_DESCRIPTION FROM SYSTOOLS.CONFIGURATION_STATUS WHERE OBJECT_TYPE = '{objectType}'"
+  },
+  {
+    "id": "check_command_syntax_check",
+    "serviceId": "check_command_syntax",
+    "description": "驗證CL指令字串的語法是否正確",
+    "matchKeywords": ["驗證cl語法", "check command syntax", "指令語法檢查", "cl指令對不對"],
+    "params": [
+      { "name": "command", "prompt": "請輸入要驗證的CL指令字串", "required": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.CHECK_COMMAND_SYNTAX('{command}')"
+  },
+  {
+    "id": "power_schedule_info_query",
+    "serviceId": "power_schedule_info",
+    "description": "查詢未來已排定的開機/關機排程",
+    "matchKeywords": ["開關機排程", "power schedule", "dsppwrscd", "自動開機時間"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM SYSTOOLS.POWER_SCHEDULE_INFO"
+  },
+  {
+    "id": "env_sys_info_query",
+    "serviceId": "env_sys_info",
+    "description": "查詢目前系統的作業系統版本、CPU、記憶體等基本資訊",
+    "matchKeywords": ["系統基本資訊", "env_sys_info", "作業系統版本查詢", "系統cpu記憶體"],
+    "params": [],
+    "sqlTemplate": "SELECT * FROM SYSIBMADM.ENV_SYS_INFO"
+  },
+  {
+    "id": "errno_info_lookup",
+    "serviceId": "errno_info",
+    "description": "查詢errno數值對應的描述文字",
+    "matchKeywords": ["errno說明", "errno_info", "查errno代碼", "錯誤代碼說明"],
+    "params": [
+      { "name": "errno", "prompt": "請輸入errno數值", "required": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.ERRNO_INFO({errno})"
+  },
+  {
+    "id": "getenv_lookup",
+    "serviceId": "getenv",
+    "description": "取得目前工作的環境變數值",
+    "matchKeywords": ["取環境變數", "getenv", "查環境變數值"],
+    "params": [
+      { "name": "environmentVariableName", "prompt": "請輸入環境變數名稱", "required": true, "upper": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.GETENV('{environmentVariableName}')"
+  },
+  {
+    "id": "putenv_call",
+    "serviceId": "putenv",
+    "description": "變更(或新建)目前工作的環境變數值",
+    "matchKeywords": ["設定環境變數", "putenv", "改環境變數值"],
+    "params": [
+      { "name": "environmentVariableName", "prompt": "請輸入環境變數名稱", "required": true, "upper": true },
+      { "name": "environmentVariableValue", "prompt": "請輸入環境變數值", "required": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.PUTENV('{environmentVariableName}', '{environmentVariableValue}')"
+  },
+  {
+    "id": "lprintf_call",
+    "serviceId": "lprintf",
+    "description": "將一段資訊性訊息寫入目前工作的joblog",
+    "matchKeywords": ["寫入joblog", "lprintf", "自訂joblog訊息"],
+    "params": [
+      { "name": "printString", "prompt": "請輸入要寫入joblog的訊息內容", "required": true }
+    ],
+    "sqlTemplate": "CALL SYSTOOLS.LPRINTF('{printString}')"
+  },
+  {
+    "id": "odd_check",
+    "serviceId": "odd",
+    "description": "判斷輸入值是否為奇數",
+    "matchKeywords": ["判斷奇數", "odd函式", "是不是奇數"],
+    "params": [
+      { "name": "expression", "prompt": "請輸入要判斷的數值", "required": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.ODD({expression})"
+  },
+  {
+    "id": "split_query",
+    "serviceId": "split",
+    "description": "依分隔符號將字串拆解成多列",
+    "matchKeywords": ["拆解字串", "split函式", "字串轉多列", "依逗號拆分"],
+    "params": [
+      { "name": "inputList", "prompt": "請輸入要拆解的字串", "required": true },
+      { "name": "delimiter", "prompt": "請輸入分隔符號", "default": "," }
+    ],
+    "sqlTemplate": "SELECT * FROM TABLE(SYSTOOLS.SPLIT('{inputList}', '{delimiter}'))"
+  },
+  {
+    "id": "send_email_call",
+    "serviceId": "send_email",
+    "description": "寄送電子郵件給一或多位收件者，可附加IFS檔案",
+    "matchKeywords": ["寄信", "寄送email", "send_email", "sndsmtpemm", "發送郵件"],
+    "params": [
+      { "name": "toEmail", "prompt": "請輸入收件者email(多筆以逗號分隔)", "required": true },
+      { "name": "subject", "prompt": "請輸入郵件主旨", "required": true },
+      { "name": "body", "prompt": "請輸入郵件內文", "required": true },
+      { "name": "attachment", "prompt": "附件IFS路徑(多筆以逗號分隔)，留空不附加", "default": "", "advanced": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.SEND_EMAIL(TO_EMAIL => '{toEmail}', SUBJECT => '{subject}', BODY => '{body}', ATTACHMENT => NULLIF('{attachment}', ''))"
+  },
+  {
+    "id": "even_check",
+    "serviceId": "even",
+    "description": "判斷輸入值是否為偶數",
+    "matchKeywords": ["判斷偶數", "even函式", "是不是偶數"],
+    "params": [
+      { "name": "expression", "prompt": "請輸入要判斷的數值", "required": true }
+    ],
+    "sqlTemplate": "VALUES SYSTOOLS.EVEN({expression})"
+  },
+  {
+    "id": "set_column_attribute_call",
+    "serviceId": "set_column_attribute",
+    "description": "設定資料表欄位的SECURE屬性，避免敏感值出現在database monitor/plan cache",
+    "matchKeywords": ["欄位加密顯示", "set_column_attribute", "隱藏欄位監控值", "保護敏感欄位"],
+    "params": [
+      { "name": "schemaName", "prompt": "請輸入資料庫Schema/Library名稱", "required": true, "upper": true },
+      { "name": "tableName", "prompt": "請輸入資料表名稱", "required": true, "upper": true },
+      { "name": "columnName", "prompt": "請輸入欄位名稱", "required": true, "upper": true },
+      { "name": "attribute", "prompt": "要設定的屬性", "default": "SECURE YES", "options": ["SECURE YES", "SECURE NO"] }
+    ],
+    "sqlTemplate": "CALL SYSPROC.SET_COLUMN_ATTRIBUTE('{schemaName}', '{tableName}', '{columnName}', '{attribute}')"
+  }
+]

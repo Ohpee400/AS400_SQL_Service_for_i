@@ -1,0 +1,15 @@
+node_modules/
+
+# 大型官方參考文件(可重新下載，不需版控)
+outputs/webfetch/rzajqpdf.pdf
+
+# 暫存/稽核用檔案
+.claude/bash-audit.log
+temp/
+
+# OS雜項
+.DS_Store
+Thumbs.db
+
+# Python bytecode cache
+__pycache__/

@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-compound-bash.py\"",
+            "args": []
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/audit-bash.py\"",
+            "args": []
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/pdf-search.py *)",
+      "Bash(bash scripts/webfetch-escalate.sh *)",
+      "Bash(bash scripts/headless-check.sh *)",
+      "Bash(python scripts/roster-mark-added.py *)"
+    ]
+  }
+}

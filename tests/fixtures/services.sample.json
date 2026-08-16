@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "disclaimer": "測試用假資料，非正式知識庫內容。"
+  },
+  "services": [
+    {
+      "id": "sample_lock",
+      "name": "QSYS2.SAMPLE_LOCK",
+      "category": "物件鎖定",
+      "description": "測試用鎖定查詢服務",
+      "minOsVersion": "7.3",
+      "ptfInfo": "測試用",
+      "verified": false,
+      "docSearchHint": "test",
+      "exampleSql": "SELECT 1"
+    },
+    {
+      "id": "sample_bigfile",
+      "name": "QSYS2.SAMPLE_BIGFILE",
+      "category": "大檔案分析",
+      "description": "測試用大檔案分析服務",
+      "minOsVersion": "7.4",
+      "ptfInfo": "測試用",
+      "verified": true,
+      "docSearchHint": "test",
+      "exampleSql": "SELECT 2"
+    }
+  ]
+}

@@ -1,0 +1,1544 @@
+[
+  {
+    "name": "ACTIVATION_GROUP_INFO",
+    "type": "Table function",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "ACTIVE_DB_CONNECTIONS",
+    "type": "Table function",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "ACTIVE_JOB_INFO",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "ADD_DEVICE_LOCKING_POLICY",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "ADD_ISCSI_TARGET",
+    "type": "Procedure",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "ADD_SERVICE_TOOLS_SERVER_CONFIGURATION_ENTRY",
+    "type": "Procedure",
+    "category": "服務工具伺服器",
+    "status": "added"
+  },
+  {
+    "name": "ADD_TIME_SERVER",
+    "type": "Procedure",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "ADD_TRACKED_JOB_QUEUE",
+    "type": "Procedure",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "ADD_USER_INDEX_ENTRY",
+    "type": "Procedure",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "ADD_USER_INDEX_ENTRY_BINARY",
+    "type": "Procedure",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "ASP_INFO",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "ASP_JOB_INFO",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "ASP_VARY_INFO",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "ASSOCIATE_JOURNAL_RECEIVER",
+    "type": "Table function",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "AUDIT_JOURNAL_DATA_MART_INFO",
+    "type": "View",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "AUTHORITY_COLLECTION",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "AUTHORITY_COLLECTION_DLO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "AUTHORITY_COLLECTION_FSOBJ",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "AUTHORITY_COLLECTION_IFS",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "AUTHORITY_COLLECTION_LIBRARIES",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "AUTHORITY_COLLECTION_OBJECT",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "AUTHORIZATION_LIST_INFO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "AUTHORIZATION_LIST_USER_INFO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "AUTOSTART_JOB_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "BINDING_DIRECTORY_INFO",
+    "type": "View",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "BOUND_MODULE_INFO",
+    "type": "View",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "BOUND_SRVPGM_INFO",
+    "type": "View",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "CERTIFICATE_INFO",
+    "type": "Table function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "CERTIFICATE_USAGE_INFO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_DEVICE_LOCKING_POLICY",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_DISK_PATHS",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_IOP",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_ISCSI_TARGET",
+    "type": "Procedure",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_OBJECTCONNECT",
+    "type": "Procedure",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_SERVICE_TOOLS_SERVER",
+    "type": "Procedure",
+    "category": "服務工具伺服器",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_SERVICE_TOOLS_SERVER_CONFIGURATION_ENTRY",
+    "type": "Procedure",
+    "category": "服務工具伺服器",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_TOTP_KEY",
+    "type": "Table function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_USER_SPACE",
+    "type": "Procedure",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_USER_SPACE_ATTRIBUTES",
+    "type": "Procedure",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_USER_SPACE_BINARY",
+    "type": "Procedure",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "CHECK_PASSWORD",
+    "type": "Table function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "CHECK_TOTP",
+    "type": "Scalar function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "CLEAR_DATA_QUEUE",
+    "type": "Procedure",
+    "category": "資料佇列",
+    "status": "added"
+  },
+  {
+    "name": "CLEAR_TRACKED_JOB_QUEUE",
+    "type": "Procedure",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "COLLECTION_SERVICES_INFO",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "COMMAND_INFO",
+    "type": "View",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "COMMUNICATIONS_ENTRY_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "COMPARE_IFS",
+    "type": "Table function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "CREATE_DATA_JOURNAL_READER",
+    "type": "Scalar function",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "CREATE_LOCKING_POLICY",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "CREATE_USER_INDEX",
+    "type": "Procedure",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "CREATE_USER_SPACE",
+    "type": "Procedure",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "DATA_AREA_INFO",
+    "type": "Table function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "DATA_QUEUE_ENTRIES",
+    "type": "Table function",
+    "category": "資料佇列",
+    "status": "added"
+  },
+  {
+    "name": "DATA_QUEUE_INFO",
+    "type": "View",
+    "category": "資料佇列",
+    "status": "added"
+  },
+  {
+    "name": "DB_TRANSACTION_INFO",
+    "type": "View",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "DB_TRANSACTION_JOURNAL_INFO",
+    "type": "Table function",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "DB_TRANSACTION_OBJECT_INFO",
+    "type": "Table function",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "DB_TRANSACTION_RECORD_INFO",
+    "type": "Table function",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "DELETE_LOCKING_POLICY",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "DISPLAY_JOURNAL",
+    "type": "Table function",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "DNS_LOOKUP",
+    "type": "Table function",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "DNS_LOOKUP_IP",
+    "type": "Scalar function",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "DRDA_AUTHENTICATION_ENTRY_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "EKM_INFO",
+    "type": "Table function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "ELECTRONIC_SERVICE_AGENT_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "ENVIRONMENT_VARIABLE_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "EXIT_POINT_INFO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "EXIT_PROGRAM_INFO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "FACTORY_RESET_DEVICE",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "FUNCTION_INFO",
+    "type": "View",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "FUNCTION_USAGE",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "GEOGRAPHIC_MIRRORING_INFO",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "GET_JOB_INFO",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "GROUP_PROFILE_ENTRIES",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "GROUP_PTF_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "HARDWARE_RESOURCE_INFO",
+    "type": "Table function",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "HISTORY_LOG_INFO",
+    "type": "Table function",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "HTTP_SERVER_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "IFS_JOB_INFO",
+    "type": "Table function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_OBJECT_LOCK_INFO",
+    "type": "Table function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_OBJECT_PRIVILEGES",
+    "type": "Table function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_OBJECT_REFERENCES_INFO",
+    "type": "Table function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_OBJECT_STATISTICS",
+    "type": "Table function",
+    "category": "大檔案分析",
+    "status": "added"
+  },
+  {
+    "name": "IFS_READ",
+    "type": "Table function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_READ_BINARY",
+    "type": "Table function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_READ_UTF8",
+    "type": "Table function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_WRITE",
+    "type": "Procedure",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_WRITE_BINARY",
+    "type": "Procedure",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_WRITE_UTF8",
+    "type": "Procedure",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "ISCSI_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "JOBLOG_INFO",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOB_DESCRIPTION_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOB_INFO",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOB_LOCK_INFO",
+    "type": "Table function",
+    "category": "物件鎖定",
+    "status": "added"
+  },
+  {
+    "name": "JOB_QUEUE_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOURNALED_OBJECTS",
+    "type": "View",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "JOURNAL_CODE_INFO",
+    "type": "View",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "JOURNAL_INFO",
+    "type": "View",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "JOURNAL_INHERIT_RULES",
+    "type": "View",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "JOURNAL_RECEIVER_INFO",
+    "type": "View",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "JVM_INFO",
+    "type": "Table function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "KERBEROS_KEYTAB_ENTRIES",
+    "type": "Table function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "LIBRARY_INFO",
+    "type": "Table  function",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "LIBRARY_LIST_INFO",
+    "type": "View",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "LICENSE_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "LOCKING_POLICY_INFO",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "MANAGE_AUDIT_JOURNAL_DATA_MART",
+    "type": "Procedure",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "MEDIA_LIBRARY_INFO",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "MEMORY_POOL",
+    "type": "Table function",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "MEMORY_POOL_INFO",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "MESSAGE_FILE_DATA",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "MESSAGE_QUEUE_INFO",
+    "type": "Table function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "NETSTAT_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "NETSTAT_INTERFACE_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "NETSTAT_JOB_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "NETSTAT_ROUTE_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "NETWORK_ATTRIBUTE_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "NVME_INFO",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "OBJECTCONNECT_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "OBJECT_LOCK_INFO",
+    "type": "View",
+    "category": "物件鎖定",
+    "status": "added"
+  },
+  {
+    "name": "OBJECT_OWNERSHIP",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "OBJECT_PRIVILEGES",
+    "type": "Table function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "OBJECT_STATISTICS",
+    "type": "Table function",
+    "category": "大檔案分析",
+    "status": "added"
+  },
+  {
+    "name": "OPEN_FILES",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "OUTPUT_QUEUE_ENTRIES",
+    "type": "Table function",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "OUTPUT_QUEUE_ENTRIES_BASIC",
+    "type": "View",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "OUTPUT_QUEUE_INFO",
+    "type": "View",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "PRESTART_JOB_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "PRESTART_JOB_STATISTICS",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "PROCESS_SYSTEM_LIMITS_ALERTS",
+    "type": "Procedure",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "PROGRAM_EXPORT_IMPORT_INFO",
+    "type": "View",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "PROGRAM_INFO",
+    "type": "View",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "PROGRAM_RESOLVED_ACTIVATIONS",
+    "type": "Table function",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "PROGRAM_RESOLVED_IMPORTS",
+    "type": "Table function",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "PTF_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "QCMDEXC",
+    "type": "Procedure",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "RDB_ENTRY_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "RECEIVE_DATA_QUEUE",
+    "type": "Table function",
+    "category": "資料佇列",
+    "status": "added"
+  },
+  {
+    "name": "RECORD_LOCK_INFO",
+    "type": "View",
+    "category": "物件鎖定",
+    "status": "added"
+  },
+  {
+    "name": "REMOTE_JOURNAL_INFO",
+    "type": "View",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "REMOVE_DEVICE_LOCKING_POLICY",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "REMOVE_ISCSI_TARGET",
+    "type": "Procedure",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "REMOVE_SERVICE_TOOLS_SERVER_CONFIGURATION_ENTRY",
+    "type": "Procedure",
+    "category": "服務工具伺服器",
+    "status": "added"
+  },
+  {
+    "name": "REMOVE_TIME_SERVER",
+    "type": "Procedure",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "REMOVE_TRACKED_JOB_QUEUE",
+    "type": "Procedure",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "REMOVE_USER_INDEX_ENTRY",
+    "type": "Table function",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "REMOVE_USER_INDEX_ENTRY_BINARY",
+    "type": "Table function",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "REPLY_LIST_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "ROUTING_ENTRY_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "SAVE_FILE_INFO",
+    "type": "View",
+    "category": "備份與還原",
+    "status": "added"
+  },
+  {
+    "name": "SAVE_FILE_OBJECTS",
+    "type": "Table function",
+    "category": "備份與還原",
+    "status": "added"
+  },
+  {
+    "name": "SCHEDULED_JOB_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "SECURITY_INFO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "SEND_DATA_QUEUE",
+    "type": "Procedure",
+    "category": "資料佇列",
+    "status": "added"
+  },
+  {
+    "name": "SEND_DATA_QUEUE_BINARY",
+    "type": "Procedure",
+    "category": "資料佇列",
+    "status": "added"
+  },
+  {
+    "name": "SEND_DATA_QUEUE_UTF8",
+    "type": "Procedure",
+    "category": "資料佇列",
+    "status": "added"
+  },
+  {
+    "name": "SEND_MESSAGE",
+    "type": "Procedure",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SERVER_SBS_CONFIGURATION",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "SERVER_SBS_ROUTING",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "SERVER_SHARE_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "SERVICES_INFO",
+    "type": "Table",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SERVICE_TOOLS_SERVER_CONFIGURATION_ENTRY_INFO",
+    "type": "View",
+    "category": "服務工具伺服器",
+    "status": "added"
+  },
+  {
+    "name": "SERVICE_TOOLS_SERVER_INFO",
+    "type": "View",
+    "category": "服務工具伺服器",
+    "status": "added"
+  },
+  {
+    "name": "SET_JVM",
+    "type": "Procedure",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SET_PASE_SHELL_INFO",
+    "type": "Procedure",
+    "category": "服務工具伺服器",
+    "status": "added"
+  },
+  {
+    "name": "SET_SERVER_SBS_ROUTING",
+    "type": "Procedure",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "SFP_TRANSCEIVER_INFO",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "SMAPP_ACCESS_PATHS",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "SOFTWARE_PRODUCT_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SPOOLED_FILE_INFO",
+    "type": "Table function",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "SQL_CHECK_AUTHORITY",
+    "type": "Scalar function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "SQL_CHECK_FUNCTION_USAGE",
+    "type": "Scalar function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "SQL_CHECK_SPECIAL_AUTHORITY",
+    "type": "Scalar function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "STACK_INFO",
+    "type": "Table function",
+    "category": "程式與程式庫",
+    "status": "added"
+  },
+  {
+    "name": "SUBSYSTEM_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "SUBSYSTEM_POOL_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "SYSDISKSTAT",
+    "type": "Table function",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "SYSLIMITS",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "SYSLIMITS_BASIC",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "SYSLIMTBL",
+    "type": "Table",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "SYSTEM_ACTIVITY_INFO",
+    "type": "Table function",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "SYSTEM_OBJECT_TYPES",
+    "type": "Table",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SYSTEM_STATUS",
+    "type": "Table function",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "SYSTEM_STATUS_INFO",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "SYSTEM_STATUS_INFO_BASIC",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "SYSTEM_VALUE_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SYSTMPSTG",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "TAPE_CARTRIDGE_INFO",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "TCPIP_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "TELNET_SERVER_ATTRIBUTES",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "TIME_PROTOCOL_INFO",
+    "type": "View",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "TRACKED_JOB_INFO",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "TRACKED_JOB_QUEUES",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "UNLOCK_DEVICE",
+    "type": "Procedure",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "USER_INDEX_ENTRIES",
+    "type": "Table function",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "USER_INDEX_INFO",
+    "type": "View",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "USER_INFO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "USER_INFO_BASIC",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "USER_SPACE",
+    "type": "Table function",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "USER_SPACE_INFO",
+    "type": "View",
+    "category": "使用者空間/索引",
+    "status": "added"
+  },
+  {
+    "name": "USER_STORAGE",
+    "type": "View",
+    "category": "儲存空間管理",
+    "status": "added"
+  },
+  {
+    "name": "VERIFY_NAME",
+    "type": "Scalar function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "WATCH_DETAIL",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "WATCH_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "WORKLOAD_GROUP_INFO",
+    "type": "View",
+    "category": "系統效能",
+    "status": "added"
+  },
+  {
+    "name": "WORKSTATION_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "DELETE_OLD_SPOOLED_FILES",
+    "type": "Procedure",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "GENERATE_PDF",
+    "type": "Scalar function",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "GENERATE_SPREADSHEET",
+    "type": "Scalar function",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "PRINTER_FILE_INFO",
+    "type": "View",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "SPOOLED_FILE_DATA",
+    "type": "Table function",
+    "category": "列印/報表管理",
+    "status": "added"
+  },
+  {
+    "name": "END_JOBS",
+    "type": "Procedure",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "ENDED_JOB_INFO",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOB_NAME",
+    "type": "Scalar function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOB_NAME_DETAILS",
+    "type": "Table function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOB_NUMBER",
+    "type": "Scalar function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOB_USER",
+    "type": "Scalar function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "JOB_QUEUE_ENTRIES",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "OVERRIDE_INFO",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "OVERRIDE_INFO_ALL",
+    "type": "View",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "REPLY_INQUIRY_MESSAGES",
+    "type": "Scalar function",
+    "category": "工作管理",
+    "status": "added"
+  },
+  {
+    "name": "PING",
+    "type": "Table function",
+    "category": "網路連線",
+    "status": "added"
+  },
+  {
+    "name": "DELETE_OLD_JOURNAL_RECEIVERS",
+    "type": "Procedure",
+    "category": "日誌管理",
+    "status": "added"
+  },
+  {
+    "name": "ADD_VALIDATION_LIST_ENTRY",
+    "type": "Scalar function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_VALIDATION_LIST_ENTRY",
+    "type": "Scalar function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "REMOVE_VALIDATION_LIST_ENTRY",
+    "type": "Scalar function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "CHANGE_USER_PROFILE",
+    "type": "Table function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "USER_DRDA_AUTHENTICATION_ENTRIES",
+    "type": "Table function",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "SPECIAL_AUTHORITY_DATA_MART",
+    "type": "Table",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "PROBLEM_INFO",
+    "type": "View",
+    "category": "安全稽核",
+    "status": "added"
+  },
+  {
+    "name": "IFS_ACCESS",
+    "type": "Scalar function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_PATH",
+    "type": "Scalar function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_RENAME",
+    "type": "Scalar function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "IFS_UNLINK",
+    "type": "Scalar function",
+    "category": "IFS檔案系統",
+    "status": "added"
+  },
+  {
+    "name": "CVE_INFO",
+    "type": "Table function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "DEFECTIVE_PTF_CURRENCY",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "FIRMWARE_CURRENCY",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "GROUP_PTF_CURRENCY",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "GROUP_PTF_CURRENCY_LOCAL",
+    "type": "Table function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "GROUP_PTF_DETAILS",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "PTF_COVER_LETTER",
+    "type": "Table function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "CHECK_PRODUCT_OPTIONS",
+    "type": "Table function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "LICENSE_EXPIRATION_CHECK",
+    "type": "Procedure",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "CONFIGURATION_STATUS",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "CHECK_COMMAND_SYNTAX",
+    "type": "Scalar function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "POWER_SCHEDULE_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "ENV_SYS_INFO",
+    "type": "View",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "ERRNO_INFO",
+    "type": "Scalar function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "GETENV",
+    "type": "Scalar function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "PUTENV",
+    "type": "Scalar function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "LPRINTF",
+    "type": "Procedure",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "ODD",
+    "type": "Scalar function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SPLIT",
+    "type": "Table function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SEND_EMAIL",
+    "type": "Scalar function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "EVEN",
+    "type": "Scalar function",
+    "category": "系統設定/其他",
+    "status": "added"
+  },
+  {
+    "name": "SET_COLUMN_ATTRIBUTE",
+    "type": "Procedure",
+    "category": "安全稽核",
+    "status": "added"
+  }
+]

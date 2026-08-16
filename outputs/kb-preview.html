@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AS400 SQL Service 知識庫（預覽版）</title>
+<style>
+  :root {
+    --ink: #17222d;
+    --muted: #55677a;
+    --paper: #eef1f6;
+    --surface: #ffffff;
+    --surface-alt: #f4f7fa;
+    --border: #d7dee6;
+    --border-strong: #c1cbd6;
+    --accent: #0e5c73;
+    --accent-ink: #ffffff;
+    --accent-soft: #d9ecf1;
+    --error: #b3261e;
+    --error-bg: #fdecea;
+    --shadow: rgba(23, 34, 45, 0.10);
+    --mono: Consolas, "Cascadia Code", "SFMono-Regular", Menlo, monospace;
+    --sans: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scrollbar-gutter: stable; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    font-size: 16px;
+  }
+  .note {
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 13.5px;
+    padding: 8px 24px;
+    text-align: center;
+  }
+  header {
+    padding: 22px 28px 16px;
+    max-width: 1220px;
+    margin: 0 auto;
+  }
+  header h1 { margin: 0; font-size: 27px; letter-spacing: -0.01em; }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+  main { max-width: 1220px; margin: 0 auto; padding: 0 28px 80px; }
+  .toolbar {
+    position: sticky; top: 0; z-index: 5; background: var(--paper);
+    padding: 12px 0 10px; display: flex; flex-wrap: wrap; gap: 10px 14px;
+    align-items: center; border-bottom: 1px solid var(--border);
+  }
+  .search-wrap { position: relative; flex: 1 1 260px; }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.55; }
+  #keyword-input {
+    width: 100%; padding: 11px 12px 11px 36px; border: 1px solid var(--border-strong);
+    border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 16px; font-family: inherit;
+  }
+  #keyword-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border-strong); border-radius: 999px; padding: 7px 13px 7px 10px;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .chip.active .dot { background: var(--accent-ink) !important; }
+  .result-count { font-size: 13.5px; color: var(--muted); margin: 10px 0 4px; }
+
+  table.catalog { width: 100%; border-collapse: collapse; font-size: 15.5px; }
+  table.catalog thead th {
+    text-align: left; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 53px; background: var(--paper);
+  }
+  tr.row { cursor: pointer; }
+  tr.row td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr.row:hover td { background: var(--surface-alt); }
+  tr.row.expanded td { background: var(--accent-soft); }
+  td.col-cat { width: 22px; }
+  .cat-dot { width: 10px; height: 10px; border-radius: 3px; margin-top: 5px; }
+  td.col-name { width: 300px; }
+  .svc-name { font-family: var(--mono); font-size: 14.5px; font-weight: 700; display: block; }
+  .svc-cat { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  td.col-desc { color: var(--ink); }
+  td.col-type { width: 110px; }
+  .type-pill {
+    display: inline-block; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 600;
+    background: var(--surface-alt); color: var(--muted); border: 1px solid var(--border); font-family: var(--mono);
+  }
+  td.col-action { width: 130px; text-align: right; }
+  .chev { display: inline-block; width: 16px; text-align: center; color: var(--muted); transition: transform 0.15s ease; margin-right: 2px; }
+  tr.row.expanded .chev { transform: rotate(90deg); color: var(--accent); }
+  button.gen-btn-sm {
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 6px;
+    padding: 8px 13px; font-size: 14px; font-family: inherit; cursor: pointer;
+  }
+  button.gen-btn-sm:hover { opacity: 0.9; }
+  tr.detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
+  .detail-inner { display: none; padding: 12px 16px 16px 38px; background: var(--surface-alt); font-size: 14px; }
+  tr.detail-row.open .detail-inner { display: block; }
+  .spec-label { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.03em; margin-right: 8px; }
+  table.ptf { border-collapse: collapse; margin-top: 8px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  table.ptf th, table.ptf td { text-align: left; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--border); }
+  table.ptf th { color: var(--muted); font-weight: 600; font-size: 12px; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(10, 16, 22, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; z-index: 20; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(500px, 100vw);
+    background: var(--surface); box-shadow: -8px 0 24px var(--shadow);
+    transform: translateX(100%); transition: transform 0.2s ease; z-index: 21; display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .drawer-head h3 { margin: 0 0 4px; font-size: 17px; font-family: var(--mono); }
+  .drawer-head p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .drawer-close { background: none; border: none; font-size: 22px; color: var(--muted); cursor: pointer; line-height: 1; }
+  .drawer-body { padding: 14px 20px; overflow-y: auto; flex: 1; }
+  .field-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .field-row:last-child { border-bottom: none; }
+  .field-row label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .field-row input, .field-row select {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border-strong);
+    border-radius: 6px; background: var(--paper); color: var(--ink); font-size: 14.5px; font-family: inherit;
+  }
+  .adv-toggle { background: none; border: none; color: var(--accent); font-size: 14px; padding: 8px 0; cursor: pointer; text-decoration: underline; font-family: inherit; }
+  .adv-fields { display: none; }
+  .adv-fields.open { display: block; }
+  .drawer-actions { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 4px; }
+  .drawer-actions .btn-row { display: flex; gap: 8px; }
+  button.gen-btn {
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 6px;
+    padding: 10px 16px; font-size: 14.5px; font-family: inherit; cursor: pointer;
+  }
+  button.secondary {
+    background: var(--surface); color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 6px; padding: 10px 16px; font-size: 14.5px; cursor: pointer; font-family: inherit;
+  }
+  .validation-msg {
+    display: none; color: var(--error); background: var(--error-bg); border: 1px solid #f3c6c2;
+    border-radius: 6px; padding: 8px 12px; font-size: 13.5px; margin-top: 4px;
+  }
+  .validation-msg.show { display: block; }
+  pre#sql-output {
+    background: #10161c; color: #d7e0ea; padding: 14px; border-radius: 8px;
+    font-family: var(--mono); font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    margin-top: 14px; display: none;
+  }
+  .copy-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  #copy-btn { display: none; }
+  #copy-status { font-size: 13px; display: none; }
+  #copy-status.ok { color: #146c3e; }
+  #copy-status.fail { color: var(--error); }
+</style>
+</head>
+<body>
+<div class="note">預覽版（本機獨立html檔案，非claude.ai）— 供審核用，尚未寫回 src/ 正式資料</div>
+<header>
+  <h1>AS400 SQL Service 知識庫</h1>
+  <p>查詢 IBM i SQL Service 所需 OS 版本/PTF，選擇情境並填寫參數即可快速產生可複製的 SQL。</p>
+</header>
+<main>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="keyword-input" type="text" placeholder="搜尋 service 名稱、描述、關鍵字…">
+    </div>
+    <div class="chip-row" id="category-chips"></div>
+  </div>
+  <div class="result-count" id="result-count"></div>
+  <table class="catalog">
+    <thead><tr><th></th><th>Service</th><th>說明</th><th>類型</th><th></th></tr></thead>
+    <tbody id="service-body"></tbody>
+  </table>
+</main>
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div><h3 id="drawer-title"></h3><p id="drawer-desc"></p></div>
+    <button class="drawer-close" id="drawer-close">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div id="form-fields"></div>
+    <button type="button" class="adv-toggle" id="adv-toggle" hidden></button>
+    <div class="adv-fields" id="adv-fields"></div>
+    <div class="drawer-actions">
+      <div class="validation-msg" id="validation-msg"></div>
+      <div class="btn-row">
+        <button class="gen-btn" id="generate-btn">產生 SQL</button>
+        <button class="secondary" id="reset-btn" type="button">重設為預設值</button>
+      </div>
+    </div>
+    <pre id="sql-output"></pre>
+    <div class="copy-row">
+      <button class="secondary" id="copy-btn">複製 SQL</button>
+      <span id="copy-status"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---- 資料：反映計畫書最終決議（10筆全數verified、type取代狀態、查詢面補齊） ----
+  var services = [
+    { id: "object_lock_info", name: "QSYS2.OBJECT_LOCK_INFO", category: "物件鎖定", type: "View",
+      description: "查詢指定物件目前的鎖定狀態、鎖定範圍與持有鎖定的工作(job)資訊，用於排查物件被鎖住無法存取的問題。",
+      minOsVersion: "7.3+",
+      ptfTable: [{version:"7.6",base:true,enhanced:"SF99960 Level 2"},{version:"7.5",base:true,enhanced:"SF99950 Level 11"},{version:"7.4",base:true,enhanced:""},{version:"7.3",base:true,enhanced:""}] },
+    { id: "systablestat", name: "QSYS2.SYSTABLESTAT / QSYS2.SYSPARTITIONSTAT", category: "大檔案分析", type: "View",
+      description: "查詢資料庫檔案(資料表)的統計資訊，包含資料筆數(NUMBER_ROWS)與資料大小(DATA_SIZE)，用於找出佔用空間過大的檔案。SYSPARTITIONSTAT 提供分割區(member)層級的細節。",
+      minOsVersion: "官方SQL Reference 7.1~7.6版本文件皆收錄，未提及PTF或版本別限制",
+      ptfTable: [{version:"7.6",base:true,enhanced:""},{version:"7.5",base:true,enhanced:""},{version:"7.4",base:true,enhanced:""},{version:"7.3",base:true,enhanced:""}] },
+    { id: "ifs_object_statistics", name: "QSYS2.IFS_OBJECT_STATISTICS", category: "大檔案分析", type: "Table function",
+      description: "查詢 IFS (整合檔案系統) 目錄下各物件的大小與屬性，用於找出佔用磁碟空間過大的 IFS 檔案/目錄。",
+      minOsVersion: "7.3+",
+      ptfTable: [{version:"7.6",base:true,enhanced:""},{version:"7.5",base:true,enhanced:"SF99950 Level 4"},{version:"7.4",base:false,enhanced:"SF99704 Level 4起可用；Enhanced Level 13"},{version:"7.3",base:false,enhanced:"SF99703 Level 16起可用；Enhanced Level 24"}] },
+    { id: "active_job_info", name: "QSYS2.ACTIVE_JOB_INFO", category: "工作管理", type: "Table function",
+      description: "查詢目前作用中(Active)的工作清單與CPU/資源使用狀況，用於找出佔用系統資源過高的工作。",
+      minOsVersion: "7.3+",
+      ptfTable: [{version:"7.6",base:true,enhanced:""},{version:"7.5",base:true,enhanced:"SF99950 Level 3/8/9"},{version:"7.4",base:true,enhanced:"SF99704 Level 7/10/13/15/20/23/29"},{version:"7.3",base:true,enhanced:"SF99703 Level 11/18/22/24/26/28"}] },
+    { id: "system_status_info", name: "QSYS2.SYSTEM_STATUS_INFO", category: "系統效能", type: "View",
+      description: "查詢系統整體效能狀態，包含CPU使用率、工作數量、主記憶體與ASP儲存空間使用情形。",
+      minOsVersion: "7.3+",
+      ptfTable: [{version:"7.6",base:true,enhanced:"SF99960 Level 3"},{version:"7.5",base:true,enhanced:"SF99950 Level 3/4/5/8/12"},{version:"7.4",base:true,enhanced:"SF99704 Level 4/7/10/23/25/26/29"},{version:"7.3",base:true,enhanced:"SF99703 Level 16/18/22"}] },
+    { id: "journal_info", name: "QSYS2.JOURNAL_INFO", category: "日誌管理", type: "View",
+      description: "查詢日誌(Journal)設定資訊，包含目前掛接的日誌接收者(Journal Receiver)與所屬程式庫。",
+      minOsVersion: "7.3+",
+      ptfTable: [{version:"7.6",base:true,enhanced:""},{version:"7.5",base:true,enhanced:""},{version:"7.4",base:true,enhanced:""},{version:"7.3",base:true,enhanced:""}] },
+    { id: "user_info", name: "QSYS2.USER_INFO", category: "安全稽核", type: "View",
+      description: "查詢使用者設定檔資訊，包含帳號狀態、使用者類別、密碼到期天數、上次登入時間等，用於安全稽核。",
+      minOsVersion: "7.3+",
+      ptfTable: [{version:"7.6",base:true,enhanced:""},{version:"7.5",base:true,enhanced:""},{version:"7.4",base:true,enhanced:"SF99704 Level 7/13"},{version:"7.3",base:true,enhanced:"SF99703 Level 4/24"}] },
+    { id: "output_queue_entries", name: "QSYS2.OUTPUT_QUEUE_ENTRIES", category: "列印/緩衝檔管理", type: "Table function",
+      description: "查詢指定列印佇列(Output Queue)中的緩衝檔(Spooled File)清單與狀態。",
+      minOsVersion: "7.3+",
+      ptfTable: [{version:"7.6",base:true,enhanced:""},{version:"7.5",base:true,enhanced:"SF99950 Level 3"},{version:"7.4",base:true,enhanced:"SF99704 Level 23"},{version:"7.3",base:true,enhanced:""}] },
+    { id: "netstat_info", name: "QSYS2.NETSTAT_INFO", category: "網路連線", type: "View",
+      description: "查詢目前TCP/IP網路連線狀態，包含本機/遠端位址、埠號與連線狀態。",
+      minOsVersion: "7.3+",
+      ptfTable: [{version:"7.6",base:true,enhanced:""},{version:"7.5",base:true,enhanced:""},{version:"7.4",base:true,enhanced:""},{version:"7.3",base:true,enhanced:"SF99703 Level 11"}] },
+    { id: "asp_info", name: "QSYS2.ASP_INFO", category: "儲存空間管理", type: "View",
+      description: "查詢輔助儲存池(ASP)的容量、可用空間與狀態，用於監控磁碟空間使用情形。",
+      minOsVersion: "7.4+",
+      ptfTable: [{version:"7.6",base:true,enhanced:"SF99960 Level 3"},{version:"7.5",base:true,enhanced:"SF99950 Level 3/4/11"},{version:"7.4",base:true,enhanced:"SF99704 Level 23/25/31"},{version:"7.3",base:false,enhanced:"最低需SF99703 Level 7才能使用；Enhanced Level 15"}] }
+  ];
+
+  var templates = [
+    { id: "object_lock_check", serviceId: "object_lock_info", description: "查詢某個 Library/Object 目前是否被鎖定，可依鎖定類型/持有工作反查",
+      params: [
+        {name:"library",prompt:"請輸入 Library 名稱",required:true,upper:true},
+        {name:"object",prompt:"請輸入 Object 名稱",required:true,upper:true},
+        {name:"objectType",prompt:"限定物件類型(OBJECT_TYPE)，例如 *FILE，留空不篩選",default:"",upper:true,advanced:true},
+        {name:"lockState",prompt:"限定鎖定類型",default:"",options:["","*EXCL","*EXCLRD","*SHRNUP","*SHRRD","*SHRUPD"],advanced:true},
+        {name:"jobName",prompt:"反查：限定持有鎖定的工作名稱",default:"",upper:true,advanced:true},
+        {name:"jobUser",prompt:"反查：限定持有鎖定的使用者",default:"",upper:true,advanced:true}
+      ],
+      sqlTemplate: "SELECT * FROM QSYS2.OBJECT_LOCK_INFO WHERE SYSTEM_OBJECT_SCHEMA = '{library}' AND SYSTEM_OBJECT_NAME = '{object}' AND (OBJECT_TYPE = '{objectType}' OR '{objectType}' = '') AND (LOCK_STATE = '{lockState}' OR '{lockState}' = '') AND (JOB_NAME = '{jobName}' OR '{jobName}' = '') AND (JOB_USER = '{jobUser}' OR '{jobUser}' = '') ORDER BY LOCK_STATE" },
+    { id: "large_table_check", serviceId: "systablestat", description: "查詢資料表大小，可依Library/資料表名稱/最少筆數/大小門檻篩選",
+      params: [
+        {name:"library",prompt:"限定 Library 名稱，留空查詢全系統",default:"",upper:true},
+        {name:"tableName",prompt:"限定資料表名稱，留空查詢全部",default:"",upper:true,advanced:true},
+        {name:"minSizeMb",prompt:"篩選門檻(MB)",default:"0"},
+        {name:"minRows",prompt:"篩選門檻(最少筆數)",default:"0",advanced:true}
+      ],
+      sqlTemplate: "SELECT TABLE_SCHEMA, TABLE_NAME, NUMBER_ROWS, DATA_SIZE FROM QSYS2.SYSTABLESTAT WHERE (TABLE_SCHEMA = '{library}' OR '{library}' = '') AND (TABLE_NAME = '{tableName}' OR '{tableName}' = '') AND (DATA_SIZE > {minSizeMb} * 1024 * 1024 OR '{minSizeMb}' = '0') AND (NUMBER_ROWS >= {minRows} OR '{minRows}' = '0') ORDER BY DATA_SIZE DESC" },
+    { id: "large_ifs_check", serviceId: "ifs_object_statistics", description: "查詢某個 IFS 目錄下超過指定大小(MB)的檔案",
+      params: [{name:"path",prompt:"請輸入起始 IFS 路徑 (例如 /home)",required:true},{name:"minSizeMb",prompt:"請輸入篩選門檻(MB)",default:"100"}],
+      sqlTemplate: "SELECT PATH_NAME, DATA_SIZE FROM TABLE (QSYS2.IFS_OBJECT_STATISTICS(START_PATH_NAME => '{path}', SUBTREE_DIRECTORIES => 'YES')) X WHERE DATA_SIZE > {minSizeMb} * 1024 * 1024 ORDER BY DATA_SIZE DESC" },
+    { id: "active_job_check", serviceId: "active_job_info", description: "查詢作用中工作的CPU使用狀況，可依副系統/工作名稱/使用者/CPU使用率門檻篩選",
+      params: [
+        {name:"subsystem",prompt:"副系統名稱(SUBSYSTEM)，留空查詢全部",default:"",upper:true},
+        {name:"jobName",prompt:"工作名稱，留空查詢全部",default:"",upper:true,advanced:true},
+        {name:"currentUser",prompt:"目前使用者，留空查詢全部",default:"",upper:true,advanced:true},
+        {name:"detailedInfo",prompt:"詳細程度",default:"ALL",options:["ALL","NONE","WORK","QTEMP","FULL"],advanced:true},
+        {name:"minCpuPercent",prompt:"篩選門檻(CPU使用率% 以上)",default:"0",advanced:true}
+      ],
+      sqlTemplate: "SELECT JOB_NAME, JOB_USER, SUBSYSTEM, CPU_TIME, ELAPSED_CPU_PERCENTAGE FROM TABLE (QSYS2.ACTIVE_JOB_INFO(SUBSYSTEM_LIST_FILTER => '{subsystem}', JOB_NAME_FILTER => '{jobName}', CURRENT_USER_LIST_FILTER => '{currentUser}', DETAILED_INFO => '{detailedInfo}')) X WHERE (ELAPSED_CPU_PERCENTAGE >= {minCpuPercent} OR '{minCpuPercent}' = '0') ORDER BY CPU_TIME DESC" },
+    { id: "system_status_check", serviceId: "system_status_info", description: "查詢系統整體效能狀態(CPU/工作數/記憶體/ASP使用率)", params: [],
+      sqlTemplate: "SELECT TOTAL_JOBS_IN_SYSTEM, MAXIMUM_JOBS_IN_SYSTEM, ACTIVE_JOBS_IN_SYSTEM, CONFIGURED_CPUS, AVERAGE_CPU_RATE, MAIN_STORAGE_SIZE, SYSTEM_ASP_USED, TOTAL_AUXILIARY_STORAGE FROM QSYS2.SYSTEM_STATUS_INFO" },
+    { id: "journal_check", serviceId: "journal_info", description: "查詢日誌(Journal)設定與掛接的接收者，可依程式庫/日誌名稱/接收者/訊息佇列篩選",
+      params: [
+        {name:"library",prompt:"限定 Library 名稱，留空查詢全系統",default:"",upper:true},
+        {name:"journalName",prompt:"限定日誌(Journal)名稱，留空查詢全部",default:"",upper:true,advanced:true},
+        {name:"receiverName",prompt:"限定日誌接收者(RECEIVER)名稱",default:"",upper:true,advanced:true},
+        {name:"receiverLibrary",prompt:"限定日誌接收者所在Library",default:"",upper:true,advanced:true},
+        {name:"messageQueue",prompt:"限定訊息佇列名稱",default:"",upper:true,advanced:true},
+        {name:"messageQueueLibrary",prompt:"限定訊息佇列所在Library",default:"",upper:true,advanced:true}
+      ],
+      sqlTemplate: "SELECT JOURNAL_NAME, JOURNAL_LIBRARY, ATTACHED_JOURNAL_RECEIVER_NAME, ATTACHED_JOURNAL_RECEIVER_LIBRARY, MESSAGE_QUEUE, MESSAGE_QUEUE_LIBRARY FROM QSYS2.JOURNAL_INFO WHERE (JOURNAL_LIBRARY = '{library}' OR '{library}' = '') AND (JOURNAL_NAME = '{journalName}' OR '{journalName}' = '') AND (ATTACHED_JOURNAL_RECEIVER_NAME = '{receiverName}' OR '{receiverName}' = '') AND (ATTACHED_JOURNAL_RECEIVER_LIBRARY = '{receiverLibrary}' OR '{receiverLibrary}' = '') AND (MESSAGE_QUEUE = '{messageQueue}' OR '{messageQueue}' = '') AND (MESSAGE_QUEUE_LIBRARY = '{messageQueueLibrary}' OR '{messageQueueLibrary}' = '')" },
+    { id: "user_info_check", serviceId: "user_info", description: "查詢使用者帳號資訊，可依帳號/狀態/類別/密碼到期天數/多久未登入篩選",
+      params: [
+        {name:"authorizationName",prompt:"限定使用者帳號，留空查詢全部",default:"",upper:true},
+        {name:"daysUntilExpire",prompt:"密碼到期天數門檻",default:"999999"},
+        {name:"status",prompt:"帳號狀態",default:"",options:["","*ENABLED","*DISABLED"],advanced:true},
+        {name:"userClassName",prompt:"使用者類別，例如 *SECOFR",default:"",upper:true,advanced:true},
+        {name:"daysSinceLastSignon",prompt:"只看幾天內未登入的帳號(0=不篩選)",default:"0",advanced:true}
+      ],
+      sqlTemplate: "SELECT AUTHORIZATION_NAME, STATUS, USER_CLASS_NAME, DAYS_UNTIL_PASSWORD_EXPIRES, PREVIOUS_SIGNON FROM QSYS2.USER_INFO WHERE (AUTHORIZATION_NAME = '{authorizationName}' OR '{authorizationName}' = '') AND (STATUS = '{status}' OR '{status}' = '') AND (USER_CLASS_NAME = '{userClassName}' OR '{userClassName}' = '') AND (DAYS_UNTIL_PASSWORD_EXPIRES <= {daysUntilExpire} OR '{daysUntilExpire}' = '999999') AND (PREVIOUS_SIGNON < CURRENT_TIMESTAMP - {daysSinceLastSignon} DAYS OR '{daysSinceLastSignon}' = '0') ORDER BY DAYS_UNTIL_PASSWORD_EXPIRES" },
+    { id: "output_queue_check", serviceId: "output_queue_entries", description: "查詢某個列印佇列(Output Queue)裡的緩衝檔清單，可依狀態/使用者/檔名篩選",
+      params: [
+        {name:"outqLib",prompt:"請輸入 Output Queue 所在 Library",required:true,upper:true},
+        {name:"outqName",prompt:"請輸入 Output Queue 名稱",required:true,upper:true},
+        {name:"status",prompt:"緩衝檔狀態",default:"",options:["","HELD","WAITING","OPEN","PENDING","PRINTING","READY","SAVED","SENDING","WRITING","CLOSED","DEFERRED","DELETED","MESSAGE"],advanced:true},
+        {name:"userName",prompt:"限定產生檔案的使用者",default:"",upper:true,advanced:true},
+        {name:"spooledFileName",prompt:"限定緩衝檔名稱",default:"",upper:true,advanced:true},
+        {name:"detailedInfo",prompt:"是否回傳完整欄位",default:"NO",options:["NO","YES"],advanced:true}
+      ],
+      sqlTemplate: "SELECT SPOOLED_FILE_NAME, USER_NAME, STATUS, CREATE_TIMESTAMP FROM TABLE (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '{outqLib}', OUTQ_NAME => '{outqName}', DETAILED_INFO => '{detailedInfo}')) X WHERE (STATUS = '{status}' OR '{status}' = '') AND (USER_NAME = '{userName}' OR '{userName}' = '') AND (SPOOLED_FILE_NAME = '{spooledFileName}' OR '{spooledFileName}' = '') ORDER BY CREATE_TIMESTAMP DESC" },
+    { id: "netstat_check", serviceId: "netstat_info", description: "查詢目前TCP/IP網路連線狀態，可依連線狀態/埠號/位址(部分比對)篩選",
+      params: [
+        {name:"state",prompt:"連線狀態",default:"",options:["","LISTEN","ESTABLISHED","CLOSE-WAIT","CLOSING","TIME-WAIT","CLOSED"]},
+        {name:"localPort",prompt:"限定本機埠號",default:"",advanced:true},
+        {name:"remotePort",prompt:"限定遠端埠號",default:"",advanced:true},
+        {name:"localAddress",prompt:"限定本機位址(部分比對，如輸入192.168.1可查整個網段)",default:"",advanced:true},
+        {name:"remoteAddress",prompt:"限定遠端位址(部分比對)",default:"",advanced:true}
+      ],
+      sqlTemplate: "SELECT LOCAL_PORT, LOCAL_ADDRESS, REMOTE_ADDRESS, REMOTE_PORT, TCP_STATE FROM QSYS2.NETSTAT_INFO WHERE (TCP_STATE = '{state}' OR '{state}' = '') AND (CHAR(LOCAL_PORT) = '{localPort}' OR '{localPort}' = '') AND (CHAR(REMOTE_PORT) = '{remotePort}' OR '{remotePort}' = '') AND (LOCAL_ADDRESS LIKE '%{localAddress}%' OR '{localAddress}' = '') AND (REMOTE_ADDRESS LIKE '%{remoteAddress}%' OR '{remoteAddress}' = '')" },
+    { id: "asp_check", serviceId: "asp_info", description: "查詢輔助儲存池(ASP)容量與可用空間，可依編號/裝置名稱/狀態/類型/可用空間門檻篩選",
+      params: [
+        {name:"aspNumber",prompt:"限定ASP編號",default:"",advanced:true},
+        {name:"deviceDescriptionName",prompt:"限定裝置描述名稱",default:"",upper:true,advanced:true},
+        {name:"aspState",prompt:"ASP狀態",default:"",options:["","ACTIVE","AVAILABLE","FAILED","NONE","VARIED OFF","VARIED ON"],advanced:true},
+        {name:"aspType",prompt:"ASP類型",default:"",options:["","PRIMARY","SECONDARY","SYSTEM","UDFS","USER"],advanced:true},
+        {name:"maxAvailableMb",prompt:"篩選門檻(可用空間低於此MB數，0=不篩選)",default:"0",advanced:true}
+      ],
+      sqlTemplate: "SELECT ASP_NUMBER, DEVICE_DESCRIPTION_NAME, ASP_STATE, ASP_TYPE, TOTAL_CAPACITY, TOTAL_CAPACITY_AVAILABLE FROM QSYS2.ASP_INFO WHERE (ASP_NUMBER = {aspNumber} OR '{aspNumber}' = '') AND (DEVICE_DESCRIPTION_NAME = '{deviceDescriptionName}' OR '{deviceDescriptionName}' = '') AND (ASP_STATE = '{aspState}' OR '{aspState}' = '') AND (ASP_TYPE = '{aspType}' OR '{aspType}' = '') AND (TOTAL_CAPACITY_AVAILABLE < {maxAvailableMb} OR '{maxAvailableMb}' = '0') ORDER BY ASP_NUMBER" }
+  ];
+
+  var palette = ["#0e5c73", "#7a4fa0", "#b5562f", "#2f7a4f", "#a1547a", "#3f6fae", "#8a7a1f", "#c04545", "#3f8a86"];
+  var categoryColor = {};
+  (function assignColors() {
+    var seen = [];
+    services.forEach(function (s) { if (seen.indexOf(s.category) === -1) seen.push(s.category); });
+    seen.forEach(function (cat, i) { categoryColor[cat] = palette[i % palette.length]; });
+  })();
+
+  function escapeHtml(str) {
+    var d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+  }
+
+  // ---- SQL 格式化：關鍵字/頂層逗號前換行，跳過括號內與字串內的內容 ----
+  function formatSql(sql) {
+    var breakWords = ['ORDER BY', 'GROUP BY', 'FROM', 'WHERE', 'AND', 'OR'];
+    var out = '', depth = 0, inQuote = false, i = 0;
+    while (i < sql.length) {
+      var ch = sql[i];
+      if (inQuote) { out += ch; if (ch === "'") inQuote = false; i++; continue; }
+      if (ch === "'") { inQuote = true; out += ch; i++; continue; }
+      if (ch === '(') { depth++; out += ch; i++; continue; }
+      if (ch === ')') { depth--; out += ch; i++; continue; }
+      if (depth === 0) {
+        if (ch === ',') {
+          out = out.replace(/[ \t]+$/, '');
+          out += ',\n  ';
+          i++;
+          while (sql[i] === ' ') i++;
+          continue;
+        }
+        var matched = null;
+        for (var k = 0; k < breakWords.length; k++) {
+          var kw = breakWords[k];
+          if (sql.substr(i, kw.length).toUpperCase() === kw) {
+            var before = i === 0 ? ' ' : sql[i - 1];
+            var after = sql[i + kw.length] || ' ';
+            if (/[\s(]/.test(before) && /[\s)]/.test(after)) { matched = kw; break; }
+          }
+        }
+        if (matched) {
+          out = out.replace(/[ \t]+$/, '');
+          out += '\n' + matched;
+          i += matched.length;
+          continue;
+        }
+      }
+      out += ch;
+      i++;
+    }
+    return out;
+  }
+
+  var serviceBody = document.getElementById('service-body');
+  var keywordInput = document.getElementById('keyword-input');
+  var chipsEl = document.getElementById('category-chips');
+  var countEl = document.getElementById('result-count');
+  var activeCategory = '';
+
+  function renderChips() {
+    var cats = Object.keys(categoryColor);
+    chipsEl.innerHTML = '';
+    cats.forEach(function (cat) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip' + (cat === activeCategory ? ' active' : '');
+      chip.innerHTML = '<span class="dot" style="background:' + categoryColor[cat] + '"></span>' + escapeHtml(cat);
+      chip.addEventListener('click', function () {
+        activeCategory = activeCategory === cat ? '' : cat;
+        renderChips();
+        applyFilters();
+      });
+      chipsEl.appendChild(chip);
+    });
+  }
+
+  function matches(s, kw) {
+    if (!kw) return true;
+    var t = (s.name + ' ' + s.category + ' ' + s.description).toLowerCase();
+    return t.indexOf(kw.toLowerCase()) !== -1;
+  }
+
+  function templatesFor(id) { return templates.filter(function (t) { return t.serviceId === id; }); }
+
+  function buildPtfHtml(s) {
+    var rows = s.ptfTable.map(function (r) {
+      var cell = r.base ? '<td>Base</td>' : '<td style="color:#8a4a00;font-weight:600;">需PTF</td>';
+      return '<tr><td>' + escapeHtml(r.version) + '</td>' + cell + '<td>' + escapeHtml(r.enhanced || '') + '</td></tr>';
+    }).join('');
+    return '<table class="ptf"><thead><tr><th>版本</th><th>原生內建</th><th>Enhanced PTF</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function renderList() {
+    var kw = keywordInput.value.trim();
+    var list = services.filter(function (s) {
+      return matches(s, kw) && (!activeCategory || s.category === activeCategory);
+    });
+    countEl.textContent = '共 ' + list.length + ' 筆';
+    serviceBody.innerHTML = '';
+    list.forEach(function (s) {
+      var row = document.createElement('tr');
+      row.className = 'row';
+      row.innerHTML =
+        '<td class="col-cat"><span class="cat-dot" style="background:' + categoryColor[s.category] + '"></span></td>' +
+        '<td class="col-name"><span class="svc-name"><span class="chev">&#9656;</span>' + escapeHtml(s.name) + '</span><span class="svc-cat">' + escapeHtml(s.category) + '</span></td>' +
+        '<td class="col-desc">' + escapeHtml(s.description) + '</td>' +
+        '<td class="col-type"><span class="type-pill">' + escapeHtml(s.type) + '</span></td>' +
+        '<td class="col-action"></td>';
+
+      var detailRow = document.createElement('tr');
+      detailRow.className = 'detail-row';
+      var detailInner = document.createElement('div');
+      detailInner.className = 'detail-inner';
+      detailInner.innerHTML = '<span class="spec-label">最低 OS</span>' + escapeHtml(s.minOsVersion) + buildPtfHtml(s);
+      var detailTd = document.createElement('td');
+      detailTd.colSpan = 5;
+      detailTd.appendChild(detailInner);
+      detailRow.appendChild(detailTd);
+
+      row.addEventListener('click', function (e) {
+        if (e.target.closest('button')) return;
+        row.classList.toggle('expanded');
+        detailRow.classList.toggle('open');
+      });
+
+      var actionTd = row.querySelector('.col-action');
+      templatesFor(s.id).forEach(function (t) {
+        var btn = document.createElement('button');
+        btn.className = 'gen-btn-sm';
+        btn.textContent = '產生 SQL';
+        btn.title = t.description;
+        btn.addEventListener('click', function () { openDrawer(t, s); });
+        actionTd.appendChild(btn);
+      });
+
+      serviceBody.appendChild(row);
+      serviceBody.appendChild(detailRow);
+    });
+  }
+
+  function applyFilters() { renderList(); }
+  keywordInput.addEventListener('input', applyFilters);
+  renderChips();
+  renderList();
+
+  // ---- drawer / 表單 ----
+  var overlay = document.getElementById('overlay');
+  var drawer = document.getElementById('drawer');
+  var drawerTitle = document.getElementById('drawer-title');
+  var drawerDesc = document.getElementById('drawer-desc');
+  var formFields = document.getElementById('form-fields');
+  var advToggle = document.getElementById('adv-toggle');
+  var advFields = document.getElementById('adv-fields');
+  var generateBtn = document.getElementById('generate-btn');
+  var resetBtn = document.getElementById('reset-btn');
+  var validationMsg = document.getElementById('validation-msg');
+  var sqlOutput = document.getElementById('sql-output');
+  var copyBtn = document.getElementById('copy-btn');
+  var copyStatus = document.getElementById('copy-status');
+
+  function closeDrawer() { overlay.classList.remove('open'); drawer.classList.remove('open'); }
+  document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+
+  function fieldRow(p) {
+    var row = document.createElement('div');
+    row.className = 'field-row';
+    var label = document.createElement('label');
+    label.textContent = p.prompt + (p.required ? ' *' : '');
+    row.appendChild(label);
+    var field;
+    if (p.options) {
+      field = document.createElement('select');
+      p.options.forEach(function (o) {
+        var opt = document.createElement('option');
+        opt.value = o; opt.textContent = o === '' ? '(不篩選)' : o;
+        field.appendChild(opt);
+      });
+    } else {
+      field = document.createElement('input');
+      field.type = 'text';
+    }
+    field.value = p.default !== undefined ? p.default : '';
+    field.dataset.name = p.name;
+    field.dataset.upper = p.upper ? '1' : '';
+    row.appendChild(field);
+    return row;
+  }
+
+  function openDrawer(t, s) {
+    drawerTitle.textContent = s.name;
+    drawerDesc.textContent = t.description;
+    formFields.innerHTML = '';
+    advFields.innerHTML = '';
+    advFields.classList.remove('open');
+    sqlOutput.style.display = 'none';
+    copyBtn.style.display = 'none';
+    copyStatus.style.display = 'none';
+    validationMsg.classList.remove('show');
+
+    var primary = t.params.filter(function (p) { return !p.advanced; });
+    var advanced = t.params.filter(function (p) { return p.advanced; });
+    primary.forEach(function (p) { formFields.appendChild(fieldRow(p)); });
+    advanced.forEach(function (p) { advFields.appendChild(fieldRow(p)); });
+    if (advanced.length) {
+      advToggle.hidden = false;
+      advToggle.textContent = '顯示更多 ' + advanced.length + ' 個進階選項 ▾';
+      advToggle.onclick = function () {
+        var open = advFields.classList.toggle('open');
+        advToggle.textContent = (open ? '收合進階選項 ▴' : '顯示更多 ' + advanced.length + ' 個進階選項 ▾');
+      };
+    } else {
+      advToggle.hidden = true;
+    }
+
+    function collect() {
+      var vals = {};
+      formFields.querySelectorAll('input,select').forEach(function (el) {
+        vals[el.dataset.name] = el.dataset.upper ? el.value.trim().toUpperCase() : el.value.trim();
+      });
+      advFields.querySelectorAll('input,select').forEach(function (el) {
+        vals[el.dataset.name] = el.dataset.upper ? el.value.trim().toUpperCase() : el.value.trim();
+      });
+      return vals;
+    }
+
+    generateBtn.onclick = function () {
+      var vals = collect();
+      var missing = t.params.filter(function (p) { return p.required && !vals[p.name]; });
+      if (missing.length) {
+        validationMsg.textContent = '請填寫必填欄位：' + missing.map(function (p) { return p.prompt; }).join('、');
+        validationMsg.classList.add('show');
+        return;
+      }
+      validationMsg.classList.remove('show');
+      var sql = t.sqlTemplate.replace(/\{(\w+)\}/g, function (_, name) { return vals[name] !== undefined ? vals[name] : ''; }) + ';';
+      sqlOutput.textContent = formatSql(sql);
+      sqlOutput.style.display = 'block';
+      copyBtn.style.display = 'inline-block';
+      copyStatus.style.display = 'none';
+    };
+    resetBtn.onclick = function () {
+      formFields.querySelectorAll('input,select').forEach(function (el, i) { el.value = primary[i] ? (primary[i].default !== undefined ? primary[i].default : '') : ''; });
+      advFields.querySelectorAll('input,select').forEach(function (el, i) { el.value = advanced[i] ? (advanced[i].default !== undefined ? advanced[i].default : '') : ''; });
+      validationMsg.classList.remove('show');
+    };
+    copyBtn.onclick = function () {
+      var text = sqlOutput.textContent;
+      function showResult(ok) {
+        copyStatus.textContent = ok ? '已複製！' : '複製失敗，請手動選取後複製 (Ctrl+C)';
+        copyStatus.className = ok ? 'ok' : 'fail';
+        copyStatus.style.display = 'inline';
+        setTimeout(function () { copyStatus.style.display = 'none'; }, 2200);
+      }
+      function fallbackCopy() {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          var ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          showResult(ok);
+        } catch (e) {
+          showResult(false);
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { showResult(true); }).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+    };
+
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+  }
+})();
+</script>
+</body>
+</html>
