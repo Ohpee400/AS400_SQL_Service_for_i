@@ -48,3 +48,15 @@
 
 ### 給未來的提醒
 往後任何要寫進`scripts/build-kb-html.js`裡`buildHtml()`回傳的template literal內、屬於「頁面實際執行的JS」的regex或字串，只要用到`\d`、`\s`、`\w`、`\b`等反斜線跳脫字元，都要**雙重跳脫**(`\\d`等)，否則會在build階段被靜默吃掉且不會有任何錯誤訊息，只能靠實際跑起來比對行為才抓得到。
+
+## 追加修正：「還沒輸入」跟「輸入了但不夠」文字完全一樣，使用者以為沒反應
+
+使用者實際依建議操作（開啟`outputs/kb.html`、選7.6+、把ACS查到的`SF99960 Level 2`貼回輸入框）後回報「查詢也輸入了，可是一點反應都沒有」，附上截圖。
+
+- 查證：問題不是bug沒生效，是文字設計缺陷——`servicePtfLevelStatus()`在「使用者還沒輸入Level」跟「使用者輸入了但等級不足」這兩種情況，都回傳同一個`status:'needs-ptf'`，`svcReqLabel()`因此顯示**完全相同**的文字「需 SF99960 Level 3+」，使用者打數字前後畫面文字沒有任何變化，才會誤以為輸入沒反應。
+- 修正：把「還沒輸入」拆成新的`status:'info'`（沿用`--muted`中性色，只顯示門檻，不代表已比對），「有輸入但不足」維持`status:'needs-ptf'`（`--warn`橘色）但文字改成明確帶出使用者輸入值：「目前 Level {N}，需升級到 {group} Level {門檻}+」。
+- 驗證（用使用者截圖裡的真實案例`QSYS2.EKM_INFO`在7.6版本需要`SF99960 Level 3`，實際用headless Chrome模擬）：
+  - 選7.6+、未輸入Level → 「需 SF99960 Level 3+」（灰字）
+  - 輸入Level=2（不足） → 「目前 Level 2，需升級到 SF99960 Level 3+」（橘字，明確跟前一狀態不同）
+  - 輸入Level=3（達標） → 「✓ 可直接使用」（綠字）
+- `npm test`16/16 pass、`npm run build`成功、`headless-check.sh`確認258筆不變。已清除本次驗證用的暫存檔。

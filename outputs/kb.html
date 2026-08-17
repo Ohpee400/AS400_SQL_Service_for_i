@@ -98,6 +98,7 @@
 
   .svc-req.status-available { color: var(--success); }
   .svc-req.status-needs-ptf { color: var(--warn); }
+  .svc-req.status-info { color: var(--muted); }
   .svc-req.status-unknown { color: var(--muted); }
 
   .active-filters { display: none; align-items: center; flex-wrap: wrap; gap: 7px; margin: 10px 0 0; }
@@ -568,10 +569,12 @@
     if (row.base) return { status: 'available' };
     var minLevel = extractMinLevel(row.enhanced);
     if (minLevel === null) return { status: 'unknown' };
-    if (userLevel === null || isNaN(userLevel)) return { status: 'needs-ptf', minLevel: minLevel };
+    // 使用者還沒輸入Level：只能顯示門檻，不算「已比對」，跟下面「有輸入但不足」要用不同狀態，
+    // 不然使用者打數字時畫面文字完全不變，會誤以為輸入沒有反應。
+    if (userLevel === null || isNaN(userLevel)) return { status: 'info', minLevel: minLevel };
     return userLevel >= minLevel
       ? { status: 'available' }
-      : { status: 'needs-ptf', minLevel: minLevel };
+      : { status: 'needs-ptf', minLevel: minLevel, userLevel: userLevel };
   }
 
   function currentPtfUserLevel() {
@@ -758,8 +761,14 @@
     if (result.status === 'available') {
       return { text: '✓ 可直接使用', statusClass: 'status-available' };
     }
+    if (result.status === 'info') {
+      // 還沒輸入Level，只顯示門檻本身，用中性色，跟下面「已比對但不足」的橘色區分開。
+      return { text: '需 ' + group + ' Level ' + result.minLevel + '+', statusClass: 'status-info' };
+    }
     if (result.status === 'needs-ptf') {
-      var levelText = result.minLevel !== undefined ? '需 ' + group + ' Level ' + result.minLevel + '+' : '需PTF';
+      // 已經比對過(使用者有輸入Level)但不足，把輸入的數字也顯示出來，
+      // 這樣使用者打數字時畫面文字才會真的跟著變，不會誤以為沒反應。
+      var levelText = '目前 Level ' + result.userLevel + '，需升級到 ' + group + ' Level ' + result.minLevel + '+';
       return { text: levelText, statusClass: 'status-needs-ptf' };
     }
     return { text: '⚠ 官方未列PTF編號，需人工確認', statusClass: 'status-unknown' };
