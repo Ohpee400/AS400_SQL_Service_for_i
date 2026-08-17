@@ -20,6 +20,7 @@
     --error-bg: #fdecea;
     --warn: #8a4a00;
     --warn-bg: #fbeee0;
+    --success: #2f7a4f;
     --shadow: rgba(23, 34, 45, 0.10);
     --mono: Consolas, "Cascadia Code", "SFMono-Regular", Menlo, monospace;
     --sans: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
@@ -75,6 +76,29 @@
     background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer;
     text-decoration: underline; font-family: inherit; padding: 2px;
   }
+
+  .ptf-level-panel {
+    display: none; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+    padding: 8px 12px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px;
+    font-size: 13px; color: var(--muted);
+  }
+  .ptf-level-panel.visible { display: flex; }
+  .ptf-level-panel label { font-weight: 600; color: var(--ink); }
+  .ptf-level-panel #ptf-group-name { font-family: var(--mono); color: var(--accent); }
+  #ptf-level-input {
+    width: 80px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 6px;
+    background: var(--paper); color: var(--ink); font-size: 13px; font-family: inherit;
+  }
+  .ptf-level-hint code { font-family: var(--mono); background: var(--surface-alt); padding: 2px 6px; border-radius: 4px; }
+  #ptf-level-copy {
+    background: none; border: 1px solid var(--accent); color: var(--accent); border-radius: 6px;
+    padding: 3px 10px; font-size: 12.5px; cursor: pointer; font-family: inherit;
+  }
+  #ptf-level-copy-status { color: var(--accent); font-size: 12px; }
+
+  .svc-req.status-available { color: var(--success); }
+  .svc-req.status-needs-ptf { color: var(--warn); }
+  .svc-req.status-unknown { color: var(--muted); }
 
   .active-filters { display: none; align-items: center; flex-wrap: wrap; gap: 7px; margin: 10px 0 0; }
   .active-filters.visible { display: flex; }
@@ -224,6 +248,13 @@
     <div class="chip-group"><span class="chip-group-label">分類</span><div class="chip-row" id="category-chips"></div></div>
     <div class="chip-group"><span class="chip-group-label">類型</span><div class="chip-row" id="type-chips"></div></div>
     <div class="chip-group"><span class="chip-group-label">OS版本</span><div class="chip-row" id="version-chips"></div></div>
+    <div class="ptf-level-panel" id="ptf-level-panel">
+      <label for="ptf-level-input">目前 <span id="ptf-group-name"></span> Level</label>
+      <input id="ptf-level-input" type="number" min="0" placeholder="例如 20">
+      <span class="ptf-level-hint">查詢指令：<code id="ptf-level-sql"></code></span>
+      <button type="button" id="ptf-level-copy">複製</button>
+      <span id="ptf-level-copy-status"></span>
+    </div>
   </div>
   <div class="active-filters" id="active-filters"></div>
   <div class="result-count-row">
@@ -464,6 +495,12 @@
   var categoryChipsEl = document.getElementById('category-chips');
   var typeChipsEl = document.getElementById('type-chips');
   var versionChipsEl = document.getElementById('version-chips');
+  var ptfLevelPanelEl = document.getElementById('ptf-level-panel');
+  var ptfGroupNameEl = document.getElementById('ptf-group-name');
+  var ptfLevelInputEl = document.getElementById('ptf-level-input');
+  var ptfLevelSqlEl = document.getElementById('ptf-level-sql');
+  var ptfLevelCopyBtn = document.getElementById('ptf-level-copy');
+  var ptfLevelCopyStatusEl = document.getElementById('ptf-level-copy-status');
   var backToTopBtn = document.getElementById('back-to-top');
   var resultCountEl = document.getElementById('result-count');
   var groupControlsEl = document.getElementById('group-controls');
@@ -512,6 +549,48 @@
     return versionFloorIndex(service) >= idx;
   }
 
+  // 每個IBM i版本固定對應一個Db2 for i PTF Group，這是IBM官方命名，不是這份資料衍生出來的，
+  // 經掃描全庫258筆ptfTable後確認全庫只出現這4個Group，不會有其他值。
+  var PTF_GROUP_BY_VERSION = { '7.3': 'SF99703', '7.4': 'SF99704', '7.5': 'SF99950', '7.6': 'SF99960' };
+
+  // 從enhanced文字裡抓出第一個「Level N」當作可用門檻；後面若有「Enhanced Level M」是加強功能，
+  // 不是門檻，比對可用性只看第一個數字。
+  function extractMinLevel(enhancedText) {
+    var m = /Level\s*(\d+)/.exec(enhancedText || '');
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  // 回傳這個service在指定版本、指定使用者PTF Level下的狀態：
+  // 'available'(可直接使用) / 'needs-ptf'(PTF等級不足，附上門檻) / 'unknown'(官方對照表沒列PTF編號，無法自動比對)
+  function servicePtfLevelStatus(service, version, userLevel) {
+    var row = (service.ptfTable || []).filter(function (r) { return r.version === version; })[0];
+    if (!row) return { status: 'unknown' };
+    if (row.base) return { status: 'available' };
+    var minLevel = extractMinLevel(row.enhanced);
+    if (minLevel === null) return { status: 'unknown' };
+    if (userLevel === null || isNaN(userLevel)) return { status: 'needs-ptf', minLevel: minLevel };
+    return userLevel >= minLevel
+      ? { status: 'available' }
+      : { status: 'needs-ptf', minLevel: minLevel };
+  }
+
+  function currentPtfUserLevel() {
+    var raw = ptfLevelInputEl.value;
+    if (raw === '') return null;
+    var n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+  }
+
+  function updatePtfLevelPanel() {
+    var group = PTF_GROUP_BY_VERSION[activeVersion];
+    if (!activeVersion || !group) {
+      ptfLevelPanelEl.classList.remove('visible');
+      return;
+    }
+    ptfLevelPanelEl.classList.add('visible');
+    ptfGroupNameEl.textContent = group;
+    ptfLevelSqlEl.textContent = "SELECT PTF_GROUP_LEVEL FROM QSYS2.GROUP_PTF_INFO WHERE PTF_GROUP_NAME = '" + group + "'";
+  }
 
   disclaimerEl.textContent = '注意：' + ((catalog.meta && catalog.meta.disclaimer) || '本知識庫內容未經人工核實，請以官方文件為準。');
 
@@ -559,6 +638,7 @@
 
   function renderVersionChips() {
     versionChipsEl.innerHTML = '';
+    updatePtfLevelPanel();
     versionList.forEach(function (version) {
       var chip = document.createElement('button');
       chip.type = 'button';
@@ -667,11 +747,30 @@
 
   var lastRenderedList = [];
 
+  // 依目前是否有選OS版本，決定service名稱下方小字要顯示「引導點擊」提示，
+  // 還是實際的PTF Level比對狀態(綠色可用/橘色需升級/灰色需人工確認)。
+  function svcReqLabel(service) {
+    var group = PTF_GROUP_BY_VERSION[activeVersion];
+    if (!activeVersion || !group) {
+      return { text: '查看 OS/PTF 需求', statusClass: '' };
+    }
+    var result = servicePtfLevelStatus(service, activeVersion, currentPtfUserLevel());
+    if (result.status === 'available') {
+      return { text: '✓ 可直接使用', statusClass: 'status-available' };
+    }
+    if (result.status === 'needs-ptf') {
+      var levelText = result.minLevel !== undefined ? '需 ' + group + ' Level ' + result.minLevel + '+' : '需PTF';
+      return { text: levelText, statusClass: 'status-needs-ptf' };
+    }
+    return { text: '⚠ 官方未列PTF編號，需人工確認', statusClass: 'status-unknown' };
+  }
+
   function appendServiceRows(service) {
     var row = document.createElement('tr');
     row.className = 'row';
+    var reqLabel = svcReqLabel(service);
     row.innerHTML =
-      '<td class="col-name"><span class="svc-name"><span class="chev">▸</span><span class="svc-name-text">' + escapeHtml(service.name) + '</span></span><span class="svc-req">查看 OS/PTF 需求</span></td>' +
+      '<td class="col-name"><span class="svc-name"><span class="chev">▸</span><span class="svc-name-text">' + escapeHtml(service.name) + '</span></span><span class="svc-req' + (reqLabel.statusClass ? ' ' + reqLabel.statusClass : '') + '">' + escapeHtml(reqLabel.text) + '</span></td>' +
       '<td class="col-desc">' + escapeHtml(service.description) + '</td>' +
       '<td class="col-type"><span class="type-pill">' + escapeHtml(service.type) + '</span></td>' +
       '<td class="col-action"></td>';
@@ -945,6 +1044,22 @@
   collapseAllBtn.addEventListener('click', function () {
     Object.keys(categoryColor).forEach(function (category) { collapsedGroups[category] = true; });
     renderServiceList(lastRenderedList);
+  });
+
+  ptfLevelInputEl.addEventListener('input', function () {
+    renderServiceList(lastRenderedList);
+  });
+  ptfLevelCopyBtn.addEventListener('click', function () {
+    var text = ptfLevelSqlEl.textContent;
+    var done = function () {
+      ptfLevelCopyStatusEl.textContent = '已複製';
+      setTimeout(function () { ptfLevelCopyStatusEl.textContent = ''; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      done();
+    }
   });
 
   renderCategoryChips();
