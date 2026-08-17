@@ -118,6 +118,23 @@ function buildHtml({ catalog, templates, engineSource }) {
   }
   #ptf-level-copy-status { color: var(--accent); font-size: 12px; }
 
+  .ptf-report {
+    display: none; margin-top: 8px; padding: 12px 14px; background: var(--accent-soft);
+    border: 1px solid var(--accent); border-radius: 8px;
+  }
+  .ptf-report.visible { display: block; }
+  .ptf-report-summary { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.6; }
+  .ptf-report-summary .highlight { color: var(--accent); }
+  .ptf-report-unlocked { margin-top: 6px; font-size: 13px; color: var(--ink); }
+  .ptf-report-unlocked ul { margin: 4px 0 0; padding-left: 20px; }
+  .ptf-report-unlocked li { font-family: var(--mono); font-size: 12.5px; margin: 2px 0; }
+  .ptf-report-actions { margin-top: 8px; }
+  #ptf-report-copy {
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 6px;
+    padding: 6px 14px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  #ptf-report-copy-status { color: var(--accent); font-size: 12px; margin-left: 8px; }
+
   .svc-req.status-available { color: var(--success); }
   .svc-req.status-needs-ptf { color: var(--warn); }
   .svc-req.status-info { color: var(--muted); }
@@ -278,6 +295,14 @@ function buildHtml({ catalog, templates, engineSource }) {
       <button type="button" id="ptf-level-copy">複製</button>
       <span id="ptf-level-copy-status"></span>
     </div>
+    <div class="ptf-report" id="ptf-report">
+      <div class="ptf-report-summary" id="ptf-report-summary"></div>
+      <div class="ptf-report-unlocked" id="ptf-report-unlocked"></div>
+      <div class="ptf-report-actions">
+        <button type="button" id="ptf-report-copy">複製報告</button>
+        <span id="ptf-report-copy-status"></span>
+      </div>
+    </div>
   </div>
   <div class="active-filters" id="active-filters"></div>
   <div class="result-count-row">
@@ -374,6 +399,11 @@ ${engineSource}
   var ptfLevelSqlEl = document.getElementById('ptf-level-sql');
   var ptfLevelCopyBtn = document.getElementById('ptf-level-copy');
   var ptfLevelCopyStatusEl = document.getElementById('ptf-level-copy-status');
+  var ptfReportEl = document.getElementById('ptf-report');
+  var ptfReportSummaryEl = document.getElementById('ptf-report-summary');
+  var ptfReportUnlockedEl = document.getElementById('ptf-report-unlocked');
+  var ptfReportCopyBtn = document.getElementById('ptf-report-copy');
+  var ptfReportCopyStatusEl = document.getElementById('ptf-report-copy-status');
   var backToTopBtn = document.getElementById('back-to-top');
   var resultCountEl = document.getElementById('result-count');
   var groupControlsEl = document.getElementById('group-controls');
@@ -467,6 +497,96 @@ ${engineSource}
     ptfLevelSqlEl.textContent = "SELECT PTF_GROUP_LEVEL FROM QSYS2.GROUP_PTF_INFO WHERE PTF_GROUP_NAME = '" + group + "'";
   }
 
+  // 彙總目前清單(通常是已篩選過的lastRenderedList)在指定版本、指定Level下的可用狀況，
+  // 算出「下一個門檻能解鎖多少個」——這是報告的核心價值，不是逐列打勾。
+  // 只計入「這個版本有ptfTable row」的service，版本本身不支援的不算在分母裡。
+  function computePtfReport(list, version, userLevel) {
+    var applicableCount = 0;
+    var availableCount = 0;
+    var blocked = [];
+    var unknownCount = 0;
+    list.forEach(function (service) {
+      var row = (service.ptfTable || []).filter(function (r) { return r.version === version; })[0];
+      if (!row) return;
+      applicableCount++;
+      if (row.base) { availableCount++; return; }
+      var minLevel = extractMinLevel(row.enhanced);
+      if (minLevel === null) { unknownCount++; return; }
+      if (userLevel >= minLevel) { availableCount++; }
+      else { blocked.push({ service: service, minLevel: minLevel }); }
+    });
+
+    var nextLevel = null;
+    var unlocked = [];
+    if (blocked.length > 0) {
+      nextLevel = Math.min.apply(null, blocked.map(function (b) { return b.minLevel; }));
+      unlocked = blocked.filter(function (b) { return b.minLevel === nextLevel; }).map(function (b) { return b.service; });
+    }
+
+    return { total: applicableCount, availableCount: availableCount, nextLevel: nextLevel, unlocked: unlocked, unknownCount: unknownCount };
+  }
+
+  function buildPtfReportText(report, group, userLevel) {
+    var lines = [];
+    lines.push('PTF相容性報告 - ' + group + ' Level ' + userLevel);
+    lines.push('目前可使用 ' + report.availableCount + ' / ' + report.total + ' 個相關service');
+    if (report.nextLevel !== null) {
+      lines.push('升級到 Level ' + report.nextLevel + ' 可再解鎖 ' + report.unlocked.length + ' 個：');
+      report.unlocked.forEach(function (s) { lines.push('  - ' + s.name); });
+    } else if (report.total > 0 && report.availableCount === report.total) {
+      lines.push('目前等級已可使用全部相關service');
+    }
+    if (report.unknownCount > 0) {
+      lines.push('另有 ' + report.unknownCount + ' 個service官方文件未列出PTF編號，需人工確認。');
+    }
+    return lines.join('\\n');
+  }
+
+  // 報告要回答的是「這個版本+這個Level整體上能用多少service」，不能沿用主表格的
+  // 「floor(最早可用版本) >= X」篩選結果——那個篩選是給「找哪些是X版本才新增的」用的，
+  // 套用在報告上會把分母錯誤地縮小成只剩「該版本才新增」的少數幾筆。報告只沿用關鍵字/
+  // 分類/類型篩選，版本篩選交給computePtfReport內部用ptfTable row是否存在來判斷。
+  function ptfReportBaseList() {
+    var byKeyword = KBEngine.search(catalog, keywordInput.value);
+    return byKeyword
+      .filter(function (s) { return !activeCategory || s.category === activeCategory; })
+      .filter(function (s) { return !activeType || s.type === activeType; });
+  }
+
+  function renderPtfReport() {
+    var group = PTF_GROUP_BY_VERSION[activeVersion];
+    var userLevel = currentPtfUserLevel();
+    if (!activeVersion || !group || userLevel === null) {
+      ptfReportEl.classList.remove('visible');
+      return;
+    }
+    var report = computePtfReport(ptfReportBaseList(), activeVersion, userLevel);
+    if (report.total === 0) {
+      ptfReportEl.classList.remove('visible');
+      return;
+    }
+    ptfReportEl.classList.add('visible');
+
+    var summaryHtml = '目前 ' + escapeHtml(group) + ' Level ' + userLevel + ' 可使用 <span class="highlight">' +
+      report.availableCount + ' / ' + report.total + '</span> 個相關service';
+    if (report.nextLevel !== null) {
+      summaryHtml += '，升級到 Level <span class="highlight">' + report.nextLevel + '</span> 可再解鎖 <span class="highlight">' +
+        report.unlocked.length + '</span> 個';
+    } else if (report.availableCount === report.total) {
+      summaryHtml += '，已經可以使用全部相關service';
+    }
+    ptfReportSummaryEl.innerHTML = summaryHtml;
+
+    var unlockedHtml = '';
+    if (report.unlocked.length > 0) {
+      unlockedHtml += '解鎖清單：<ul>' + report.unlocked.map(function (s) { return '<li>' + escapeHtml(s.name) + '</li>'; }).join('') + '</ul>';
+    }
+    if (report.unknownCount > 0) {
+      unlockedHtml += '<div style="margin-top:6px;color:var(--muted);">另有 ' + report.unknownCount + ' 個service官方文件未列出PTF編號，無法自動判斷，需人工確認。</div>';
+    }
+    ptfReportUnlockedEl.innerHTML = unlockedHtml;
+  }
+
   disclaimerEl.textContent = '注意：' + ((catalog.meta && catalog.meta.disclaimer) || '本知識庫內容未經人工核實，請以官方文件為準。');
 
   function escapeHtml(str) {
@@ -536,6 +656,7 @@ ${engineSource}
       .filter(function (s) { return !activeVersion || serviceRequiresAtLeast(s, activeVersion); });
     renderServiceList(list);
     renderActiveFilters();
+    renderPtfReport();
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
@@ -929,12 +1050,29 @@ ${engineSource}
 
   ptfLevelInputEl.addEventListener('input', function () {
     renderServiceList(lastRenderedList);
+    renderPtfReport();
   });
   ptfLevelCopyBtn.addEventListener('click', function () {
     var text = ptfLevelSqlEl.textContent;
     var done = function () {
       ptfLevelCopyStatusEl.textContent = '已複製';
       setTimeout(function () { ptfLevelCopyStatusEl.textContent = ''; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      done();
+    }
+  });
+  ptfReportCopyBtn.addEventListener('click', function () {
+    var group = PTF_GROUP_BY_VERSION[activeVersion];
+    var userLevel = currentPtfUserLevel();
+    if (!group || userLevel === null) return;
+    var report = computePtfReport(ptfReportBaseList(), activeVersion, userLevel);
+    var text = buildPtfReportText(report, group, userLevel);
+    var done = function () {
+      ptfReportCopyStatusEl.textContent = '已複製';
+      setTimeout(function () { ptfReportCopyStatusEl.textContent = ''; }, 1500);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, done);
