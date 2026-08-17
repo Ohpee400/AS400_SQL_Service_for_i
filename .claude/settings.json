@@ -37,7 +37,8 @@
       "Bash(where *)",
       "Bash(python3 scripts/pdf-search.py *)",
       "Bash(python3 scripts/roster-mark-added.py *)",
-      "Bash"
+      "Bash",
+      "Bash(tasklist *)"
     ]
   }
 }
