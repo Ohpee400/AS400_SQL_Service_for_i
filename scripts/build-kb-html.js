@@ -111,7 +111,7 @@ function buildHtml({ catalog, templates, engineSource }) {
     width: 80px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 6px;
     background: var(--paper); color: var(--ink); font-size: 13px; font-family: inherit;
   }
-  .ptf-level-hint code { font-family: var(--mono); background: var(--surface-alt); padding: 2px 6px; border-radius: 4px; }
+  .ptf-level-sql-hidden { display: none; }
   #ptf-level-copy {
     background: none; border: 1px solid var(--accent); color: var(--accent); border-radius: 6px;
     padding: 3px 10px; font-size: 12.5px; cursor: pointer; font-family: inherit;
@@ -128,6 +128,7 @@ function buildHtml({ catalog, templates, engineSource }) {
   .ptf-report-unlocked { margin-top: 6px; font-size: 13px; color: var(--ink); }
   .ptf-report-unlocked ul { margin: 4px 0 0; padding-left: 20px; }
   .ptf-report-unlocked li { font-family: var(--mono); font-size: 12.5px; margin: 2px 0; }
+  .ptf-report-all-clear { color: var(--success); font-weight: 600; }
   .ptf-report-actions { margin-top: 8px; }
   #ptf-report-copy {
     background: var(--accent); color: var(--accent-ink); border: none; border-radius: 6px;
@@ -139,6 +140,7 @@ function buildHtml({ catalog, templates, engineSource }) {
   .svc-req.status-needs-ptf { color: var(--warn); }
   .svc-req.status-info { color: var(--muted); }
   .svc-req.status-unknown { color: var(--muted); }
+  .svc-req.status-unsupported { color: var(--muted); }
 
   .active-filters { display: none; align-items: center; flex-wrap: wrap; gap: 7px; margin: 10px 0 0; }
   .active-filters.visible { display: flex; }
@@ -206,6 +208,7 @@ function buildHtml({ catalog, templates, engineSource }) {
   table.ptf th, table.ptf td { text-align: left; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--border); }
   table.ptf th { color: var(--muted); font-weight: 600; font-size: 12px; white-space: nowrap; }
   table.ptf td.not-base { color: var(--warn); font-weight: 600; }
+  table.ptf td.not-supported { color: var(--muted); font-style: italic; }
   .action-warning {
     font-size: 13px; color: var(--warn); background: var(--warn-bg);
     border-left: 3px solid var(--warn); padding: 7px 11px; margin: 8px 0 0; border-radius: 4px;
@@ -291,8 +294,8 @@ function buildHtml({ catalog, templates, engineSource }) {
     <div class="ptf-level-panel" id="ptf-level-panel">
       <label for="ptf-level-input">目前 <span id="ptf-group-name"></span> Level</label>
       <input id="ptf-level-input" type="number" min="0" placeholder="例如 20">
-      <span class="ptf-level-hint">查詢指令：<code id="ptf-level-sql"></code></span>
-      <button type="button" id="ptf-level-copy">複製</button>
+      <code id="ptf-level-sql" class="ptf-level-sql-hidden" aria-hidden="true"></code>
+      <button type="button" id="ptf-level-copy">複製查詢SQL</button>
       <span id="ptf-level-copy-status"></span>
     </div>
     <div class="ptf-report" id="ptf-report">
@@ -464,10 +467,12 @@ ${engineSource}
   }
 
   // 回傳這個service在指定版本、指定使用者PTF Level下的狀態：
-  // 'available'(可直接使用) / 'needs-ptf'(PTF等級不足，附上門檻) / 'unknown'(官方對照表沒列PTF編號，無法自動比對)
+  // 'available'(可直接使用) / 'needs-ptf'(PTF等級不足，附上門檻) /
+  // 'unsupported'(官方對照表根本沒有這個版本的資料列，即該版本不支援此service) /
+  // 'unknown'(有資料列，但enhanced文字解析不出Level數字，需人工查證)
   function servicePtfLevelStatus(service, version, userLevel) {
     var row = (service.ptfTable || []).filter(function (r) { return r.version === version; })[0];
-    if (!row) return { status: 'unknown' };
+    if (!row) return { status: 'unsupported' };
     if (row.base) return { status: 'available' };
     var minLevel = extractMinLevel(row.enhanced);
     if (minLevel === null) return { status: 'unknown' };
@@ -486,11 +491,20 @@ ${engineSource}
     return isNaN(n) ? null : n;
   }
 
+  // 記錄目前面板顯示的是哪個版本的PTF Group，用來偵測「使用者切換了OS版本chip」，
+  // 此時輸入框裡的Level是對應舊版本Group的數字，換了Group後不能再沿用，要清空。
+  var ptfLevelPanelVersion = null;
+
   function updatePtfLevelPanel() {
     var group = PTF_GROUP_BY_VERSION[activeVersion];
     if (!activeVersion || !group) {
       ptfLevelPanelEl.classList.remove('visible');
+      ptfLevelPanelVersion = null;
       return;
+    }
+    if (ptfLevelPanelVersion !== activeVersion) {
+      ptfLevelInputEl.value = '';
+      ptfLevelPanelVersion = activeVersion;
     }
     ptfLevelPanelEl.classList.add('visible');
     ptfGroupNameEl.textContent = group;
@@ -534,7 +548,7 @@ ${engineSource}
       lines.push('升級到 Level ' + report.nextLevel + ' 可再解鎖 ' + report.unlocked.length + ' 個：');
       report.unlocked.forEach(function (s) { lines.push('  - ' + s.name); });
     } else if (report.total > 0 && report.availableCount === report.total) {
-      lines.push('目前等級已可使用全部相關service');
+      lines.push('🎉 目前PTF等級已可支援篩選範圍內全部 ' + report.total + ' 個服務，無需升級');
     }
     if (report.unknownCount > 0) {
       lines.push('另有 ' + report.unknownCount + ' 個service官方文件未列出PTF編號，需人工確認。');
@@ -580,6 +594,8 @@ ${engineSource}
     var unlockedHtml = '';
     if (report.unlocked.length > 0) {
       unlockedHtml += '解鎖清單：<ul>' + report.unlocked.map(function (s) { return '<li>' + escapeHtml(s.name) + '</li>'; }).join('') + '</ul>';
+    } else if (report.nextLevel === null && report.availableCount === report.total) {
+      unlockedHtml += '<div class="ptf-report-all-clear">🎉 目前PTF等級已可支援篩選範圍內全部 ' + report.total + ' 個服務，無需升級</div>';
     }
     if (report.unknownCount > 0) {
       unlockedHtml += '<div style="margin-top:6px;color:var(--muted);">另有 ' + report.unknownCount + ' 個service官方文件未列出PTF編號，無法自動判斷，需人工確認。</div>';
@@ -722,12 +738,19 @@ ${engineSource}
     activeFiltersEl.appendChild(clearAllBtn);
   }
 
+  // 固定依versionList(既有資料習慣，由新到舊)逐一渲染每個版本一列，缺資料的版本
+  // (官方Not Supported)不能整列消失，要明確標示「不支援」，不然使用者無法分辨
+  // 「沒資料」跟「真的不支援」。
   function buildPtfTableHtml(ptfTable) {
-    var rows = ptfTable.map(function (row) {
+    var rows = versionList.map(function (version) {
+      var row = ptfTable.filter(function (r) { return r.version === version; })[0];
+      if (!row) {
+        return '<tr><td>' + escapeHtml(version) + '</td><td class="not-supported" colspan="2">不支援</td></tr>';
+      }
       var baseCell = row.base
         ? '<td>Base</td>'
         : '<td class="not-base">需PTF</td>';
-      return '<tr><td>' + escapeHtml(row.version) + '</td>' + baseCell + '<td>' + escapeHtml(row.enhanced || '') + '</td></tr>';
+      return '<tr><td>' + escapeHtml(version) + '</td>' + baseCell + '<td>' + escapeHtml(row.enhanced || '') + '</td></tr>';
     }).join('');
     return '<table class="ptf"><thead><tr><th>版本</th><th>原生內建</th><th>Enhanced PTF</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
@@ -763,6 +786,9 @@ ${engineSource}
       // 這樣使用者打數字時畫面文字才會真的跟著變，不會誤以為沒反應。
       var levelText = '目前 Level ' + result.userLevel + '，需升級到 ' + group + ' Level ' + result.minLevel + '+';
       return { text: levelText, statusClass: 'status-needs-ptf' };
+    }
+    if (result.status === 'unsupported') {
+      return { text: '此版本不支援', statusClass: 'status-unsupported' };
     }
     return { text: '⚠ 官方未列PTF編號，需人工確認', statusClass: 'status-unknown' };
   }
