@@ -9,11 +9,7 @@ IBM i（AS400）SQL Services 知識庫與 SQL 產生工具，以單一本機靜�
 
 ## 怎麼開啟
 
-不需要安裝任何東西、不需要啟動伺服器：
-
-```
-直接用瀏覽器（Chrome/Edge）雙擊開啟 outputs/kb.html
-```
+不需要安裝任何東西、不需要啟動伺服器，直接用瀏覽器（Chrome/Edge）雙擊開啟 `outputs/kb.html` 即可。
 
 所有資料與程式邏輯都已內嵌在這個檔案裡，開啟後不會發出任何網路請求，離線也能用。
 
@@ -28,17 +24,16 @@ npm run build      # 讀取 src/data/*.json + src/lib/kbEngine.js，重新產出
 
 ## 專案結構
 
-```
-src/
-  data/services.json    服務目錄（分類、版本/PTF需求、官方文件出處）
-  data/templates.json   SQL 產生模板（欄位、預設值、比對關鍵字）
-  lib/kbEngine.js        比對/填值/SQL排版共用邏輯（build 與網頁內嵌共用同一份）
-scripts/build-kb-html.js  從上述資料產出 outputs/kb.html
-tests/unit/                單元測試
-outputs/kb.html             交付成品（唯一需要分發給使用者的檔案）
-docs/                       使用說明、資料欄位說明
-plans/ progress/ agent_logs/  開發過程的規劃、執行記錄、停損機制記錄
-```
+| 路徑 | 說明 |
+|---|---|
+| `src/data/services.json` | 服務目錄（分類、版本/PTF 需求、官方文件出處） |
+| `src/data/templates.json` | SQL 產生模板（欄位、預設值、比對關鍵字） |
+| `src/lib/kbEngine.js` | 比對/填值/SQL 排版共用邏輯（build 與網頁內嵌共用同一份） |
+| `scripts/build-kb-html.js` | 從上述資料產出 `outputs/kb.html` |
+| `tests/unit/` | 單元測試 |
+| `outputs/kb.html` | 交付成品（唯一需要分發給使用者的檔案） |
+| `docs/` | 使用說明、資料欄位說明 |
+| `plans/`、`progress/`、`agent_logs/` | 開發過程的規劃、執行記錄、停損機制記錄 |
 
 ## 資料驗證方式
 
