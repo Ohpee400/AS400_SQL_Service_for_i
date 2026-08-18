@@ -266,7 +266,7 @@
         { "version": "7.3", "base": true, "enhanced": "SF99703 Level 11/18/22/24/26/28" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 內文搜尋「ACTIVE_JOB_INFO table function」（原書第1104頁）",
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1121-1125頁「ACTIVE_JOB_INFO table function」（原書第1105-1109頁）。舊版docSearchHint只記「原書第1104頁」缺實際PDF頁碼，2026-08-18用pdf-search.py搜尋確認正確PDF頁碼後補上並修正",
       "exampleSql": "SELECT JOB_NAME, JOB_USER, SUBSYSTEM, CPU_TIME, ELAPSED_CPU_PERCENTAGE FROM TABLE (QSYS2.ACTIVE_JOB_INFO(SUBSYSTEM_LIST_FILTER => 'QINTER', DETAILED_INFO => 'ALL')) X ORDER BY CPU_TIME DESC"
     },
     {
@@ -283,7 +283,7 @@
         { "version": "7.3", "base": true, "enhanced": "SF99703 Level 16/18/22" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 內文搜尋「SYSTEM_STATUS_INFO view」（原書第1213頁）",
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1230-1240頁「SYSTEM_STATUS_INFO view」（原書第1214-1224頁）",
       "exampleSql": "SELECT TOTAL_JOBS_IN_SYSTEM, MAXIMUM_JOBS_IN_SYSTEM, ACTIVE_JOBS_IN_SYSTEM, CONFIGURED_CPUS, AVERAGE_CPU_RATE, MAIN_STORAGE_SIZE, SYSTEM_ASP_USED, TOTAL_AUXILIARY_STORAGE FROM QSYS2.SYSTEM_STATUS_INFO"
     },
     {
@@ -300,7 +300,7 @@
         { "version": "7.3", "base": true, "enhanced": "" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 內文搜尋「JOURNAL_INFO view」",
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第874-882頁「JOURNAL_INFO view」（原書第858-866頁）",
       "exampleSql": "SELECT JOURNAL_NAME, JOURNAL_LIBRARY, ATTACHED_JOURNAL_RECEIVER_NAME, ATTACHED_JOURNAL_RECEIVER_LIBRARY, MESSAGE_QUEUE, MESSAGE_QUEUE_LIBRARY FROM QSYS2.JOURNAL_INFO WHERE JOURNAL_LIBRARY = 'MYLIB'"
     },
     {
@@ -983,7 +983,7 @@
         { "version": "7.3", "base": true, "enhanced": "SF99703 Level 4/24" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 內文搜尋「USER_INFO view」（原書第1001頁）",
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1017-1026頁「USER_INFO view」（原書第1001-1010頁）",
       "exampleSql": "SELECT AUTHORIZATION_NAME, STATUS, USER_CLASS_NAME, DAYS_UNTIL_PASSWORD_EXPIRES, PREVIOUS_SIGNON FROM QSYS2.USER_INFO WHERE DAYS_UNTIL_PASSWORD_EXPIRES <= 7 ORDER BY DAYS_UNTIL_PASSWORD_EXPIRES"
     },
     {
@@ -1000,7 +1000,7 @@
         { "version": "7.3", "base": true, "enhanced": "" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 內文搜尋「OUTPUT_QUEUE_ENTRIES table function」（原書第1022頁）",
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1038-1039頁「OUTPUT_QUEUE_ENTRIES table function」（原書第1022-1023頁）。舊版docSearchHint只記「原書第1022頁」缺實際PDF頁碼，2026-08-18用pdf-search.py搜尋確認正確PDF頁碼後補上並修正",
       "exampleSql": "SELECT SPOOLED_FILE_NAME, USER_NAME, STATUS, CREATE_TIMESTAMP FROM TABLE (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => 'MYLIB', OUTQ_NAME => 'PRT01')) X ORDER BY CREATE_TIMESTAMP DESC"
     },
     {
@@ -1187,7 +1187,7 @@
         { "version": "7.3", "base": true, "enhanced": "SF99703 Level 11" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 內文搜尋「NETSTAT_INFO view」（原書第570頁）",
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第587-593頁「NETSTAT_INFO view」（原書第571-577頁）",
       "exampleSql": "SELECT LOCAL_PORT, LOCAL_ADDRESS, REMOTE_ADDRESS, REMOTE_PORT, TCP_STATE FROM QSYS2.NETSTAT_INFO WHERE TCP_STATE = 'LISTEN'"
     },
     {
@@ -1204,7 +1204,7 @@
         { "version": "7.3", "base": false, "enhanced": "最低需SF99703 Level 7才能使用；Enhanced further到Level 15" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 內文搜尋「ASP_INFO view」（原書第1048頁），TOTAL_CAPACITY/TOTAL_CAPACITY_AVAILABLE單位為MB已核對",
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1064-1074頁「ASP_INFO view」（原書第1048-1058頁），TOTAL_CAPACITY/TOTAL_CAPACITY_AVAILABLE單位為MB已核對",
       "exampleSql": "SELECT ASP_NUMBER, DEVICE_DESCRIPTION_NAME, ASP_STATE, ASP_TYPE, TOTAL_CAPACITY, TOTAL_CAPACITY_AVAILABLE FROM QSYS2.ASP_INFO ORDER BY ASP_NUMBER"
     },
     {
@@ -3525,8 +3525,8 @@
         { "version": "7.3", "base": false, "enhanced": "SF99703 Level 15起可用" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1057-1059頁「SPOOLED_FILE_DATA table function」（原書第1041-1043頁）",
-      "exampleSql": "SELECT * FROM TABLE(SYSTOOLS.SPOOLED_FILE_DATA(JOB_NAME => '{jobName}', SPOOLED_FILE_NAME => '{spooledFileName}')) ORDER BY ORDINAL_POSITION"
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1057-1059頁「SPOOLED_FILE_DATA table function」（原書第1041-1043頁），完整簽章在第1058頁：JOB_NAME/SPOOLED_FILE_NAME/SPOOLED_FILE_NUMBER/IGNORE_ERRORS共4個參數，第1059頁的Example只示範前2個必要參數",
+      "exampleSql": "SELECT * FROM TABLE(SYSTOOLS.SPOOLED_FILE_DATA(JOB_NAME => '{jobName}', SPOOLED_FILE_NAME => '{spooledFileName}', SPOOLED_FILE_NUMBER => {spooledFileNumber}, IGNORE_ERRORS => '{ignoreErrors}')) ORDER BY ORDINAL_POSITION"
     },
     {
       "id": "end_jobs",
@@ -3541,7 +3541,7 @@
         { "version": "7.4", "base": false, "enhanced": "SF99704 Level 29起可用" }
       ],
       "verified": true,
-      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1147-1150頁「END_JOBS procedure」（原書第1131-1133頁）",
+      "docSearchHint": "官方手冊 outputs/webfetch/rzajqpdf.pdf 第1147-1150頁「END_JOBS procedure」（原書第1131-1133頁）。JOB_END_MAXIMUM在CALL陳述式裡只要傳NULL(不論CAST/NULLIF/CASE運算式或裸NULL關鍵字)一律報SQL0802，2026-08-18改用kbEngine的條件式子句省略語法([paramName:...])解決，留空時這個參數整段不出現在SQL裡，不會傳NULL，詳見agent_logs/errors.md的[2026-08-18-3]與plans/2026-08-18-kbengine-conditional-clause-omission.md",
       "exampleSql": "CALL SYSTOOLS.END_JOBS(JOB_NAME_FILTER => '{jobNameFilter}', END_OPTION => '{endOption}', DELETE_SPOOLED_FILES => '{deleteSpooledFiles}')"
     },
     {

@@ -85,11 +85,8 @@ function buildHtml({ catalog, templates, engineSource }) {
     font-size: 14px; cursor: pointer; font-family: inherit;
   }
   .chip.chip-type { border-radius: 6px; }
-  .chip .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  .chip.chip-type .dot { border-radius: 3px; }
   .chip:hover { border-color: var(--accent); }
   .chip.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  .chip.active .dot { background: var(--accent-ink) !important; }
   .result-count-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0 4px; }
   .result-count { font-size: 13.5px; color: var(--muted); }
   .group-controls { display: none; gap: 10px; flex: none; }
@@ -168,8 +165,9 @@ function buildHtml({ catalog, templates, engineSource }) {
   }
   tr.group-header { cursor: pointer; }
   tr.group-header td {
-    padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--paper);
-    font-size: 13.5px; font-weight: 700; color: var(--ink);
+    padding: 8px 10px 8px 13px; border-bottom: 1px solid var(--border); background: var(--border);
+    border-left: 4px solid var(--accent);
+    font-size: 16px; font-weight: 700; color: var(--ink);
   }
   tr.group-header .chev { display: inline-block; width: 16px; text-align: center; color: var(--muted); transition: transform 0.15s ease; }
   tr.group-header.collapsed .chev { transform: rotate(-90deg); }
@@ -178,7 +176,6 @@ function buildHtml({ catalog, templates, engineSource }) {
   tr.row td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: break-word; }
   tr.row:hover td { background: var(--surface-alt); }
   tr.row.expanded td { background: var(--accent-soft); }
-  .cat-dot { width: 9px; height: 9px; border-radius: 3px; }
   td.col-name { width: 510px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .svc-name { font-family: var(--mono); font-size: 14.5px; font-weight: 700; display: flex; align-items: flex-start; gap: 4px; white-space: nowrap; }
   .svc-req { font-size: 12.5px; color: var(--accent); margin-top: 2px; white-space: normal; }
@@ -364,12 +361,9 @@ ${engineSource}
   var catalog = ${safeEmbed(catalog)};
   var templates = ${safeEmbed(templates)};
 
-  var CATEGORY_PALETTE = ['#0e5c73', '#7a4fa0', '#b5562f', '#2f7a4f', '#a1547a', '#3f6fae', '#8a7a1f', '#c04545', '#3f8a86'];
-  var categoryColor = {};
-  (function assignColors() {
-    var seen = [];
-    catalog.services.forEach(function (s) { if (seen.indexOf(s.category) === -1) seen.push(s.category); });
-    seen.forEach(function (cat, i) { categoryColor[cat] = CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]; });
+  var categories = [];
+  (function collectCategories() {
+    catalog.services.forEach(function (s) { if (categories.indexOf(s.category) === -1) categories.push(s.category); });
   })();
 
   // 類型顏色：語意固定（Procedure是唯一會異動系統狀態的類型，用跟action-warning同一色系標示；
@@ -617,11 +611,11 @@ ${engineSource}
 
   function renderCategoryChips() {
     categoryChipsEl.innerHTML = '';
-    Object.keys(categoryColor).forEach(function (category) {
+    categories.forEach(function (category) {
       var chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'chip' + (category === activeCategory ? ' active' : '');
-      chip.innerHTML = '<span class="dot" style="background:' + categoryColor[category] + '"></span>' + escapeHtml(category);
+      chip.textContent = category;
       chip.addEventListener('click', function () {
         activeCategory = activeCategory === category ? '' : category;
         renderCategoryChips();
@@ -637,7 +631,7 @@ ${engineSource}
       var chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'chip chip-type' + (type === activeType ? ' active' : '');
-      chip.innerHTML = '<span class="dot" style="background:' + typeColor[type] + '"></span>' + escapeHtml(type);
+      chip.textContent = type;
       chip.addEventListener('click', function () {
         activeType = activeType === type ? '' : type;
         renderTypeChips();
@@ -800,7 +794,7 @@ ${engineSource}
     row.innerHTML =
       '<td class="col-name"><span class="svc-name"><span class="chev">▸</span><span class="svc-name-text">' + escapeHtml(service.name) + '</span></span><span class="svc-req' + (reqLabel.statusClass ? ' ' + reqLabel.statusClass : '') + '">' + escapeHtml(reqLabel.text) + '</span></td>' +
       '<td class="col-desc">' + escapeHtml(service.description) + '</td>' +
-      '<td class="col-type"><span class="type-pill">' + escapeHtml(service.type) + '</span></td>' +
+      '<td class="col-type"><span class="type-pill" style="background:' + typeColor[service.type] + '1a;color:' + typeColor[service.type] + ';border-color:' + typeColor[service.type] + '55;">' + escapeHtml(service.type) + '</span></td>' +
       '<td class="col-action"></td>';
 
     var detailRow = document.createElement('tr');
@@ -845,7 +839,6 @@ ${engineSource}
     td.colSpan = 4;
     td.innerHTML =
       '<span class="chev">▾</span> ' +
-      '<span class="cat-dot" style="background:' + categoryColor[category] + ';display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>' +
       escapeHtml(category) + '<span class="group-count">(' + count + ')</span>';
     headerRow.appendChild(td);
     headerRow.addEventListener('click', function () {
@@ -881,7 +874,7 @@ ${engineSource}
       if (!byCategory[s.category]) byCategory[s.category] = [];
       byCategory[s.category].push(s);
     });
-    Object.keys(categoryColor).forEach(function (category) {
+    categories.forEach(function (category) {
       var items = byCategory[category];
       if (!items || items.length === 0) return;
       appendGroupHeader(category, items.length);
@@ -1066,11 +1059,11 @@ ${engineSource}
   keywordInput.addEventListener('input', applyFilters);
 
   expandAllBtn.addEventListener('click', function () {
-    Object.keys(categoryColor).forEach(function (category) { collapsedGroups[category] = false; });
+    categories.forEach(function (category) { collapsedGroups[category] = false; });
     renderServiceList(lastRenderedList);
   });
   collapseAllBtn.addEventListener('click', function () {
-    Object.keys(categoryColor).forEach(function (category) { collapsedGroups[category] = true; });
+    categories.forEach(function (category) { collapsedGroups[category] = true; });
     renderServiceList(lastRenderedList);
   });
 

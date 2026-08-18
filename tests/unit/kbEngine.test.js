@@ -127,6 +127,24 @@ test('fillTemplate uppercases values when param.upper is set', () => {
   assert.equal(sql, "SELECT * FROM QSYS2.SAMPLE WHERE LIB = 'MYLIB' AND PATH = '/home/MixedCase'");
 });
 
+test('fillTemplate omits [paramName:...] clauses entirely when the param is blank', () => {
+  const template = {
+    id: 'conditional_clause_check',
+    serviceId: 'sample_lock',
+    params: [
+      { name: 'jobName', prompt: 'job?', required: true },
+      { name: 'jobEndMaximum', prompt: 'max?', default: '' },
+      { name: 'iterationCount', prompt: 'count?', default: '100' }
+    ],
+    sqlTemplate: "CALL SYSTOOLS.SAMPLE(JOB_NAME => '{jobName}'[jobEndMaximum:, JOB_END_MAXIMUM => {jobEndMaximum}], ITERATION_COUNT => {iterationCount})"
+  };
+  const blank = fillTemplate(template, { jobName: 'A' });
+  assert.equal(blank, "CALL SYSTOOLS.SAMPLE(JOB_NAME => 'A', ITERATION_COUNT => 100)");
+
+  const filled = fillTemplate(template, { jobName: 'A', jobEndMaximum: '2000' });
+  assert.equal(filled, "CALL SYSTOOLS.SAMPLE(JOB_NAME => 'A', JOB_END_MAXIMUM => 2000, ITERATION_COUNT => 100)");
+});
+
 test('formatSql breaks before FROM/WHERE/top-level AND, but keeps nested OR-trick groups intact', () => {
   const sql = "SELECT JOURNAL_NAME, JOURNAL_LIBRARY FROM QSYS2.JOURNAL_INFO WHERE (JOURNAL_LIBRARY = 'MYLIB' OR 'MYLIB' = '') AND (JOURNAL_NAME = '' OR '' = '');";
   const formatted = formatSql(sql);
@@ -134,6 +152,21 @@ test('formatSql breaks before FROM/WHERE/top-level AND, but keeps nested OR-tric
     formatted,
     "SELECT JOURNAL_NAME,\n  JOURNAL_LIBRARY\nFROM QSYS2.JOURNAL_INFO\nWHERE (JOURNAL_LIBRARY = 'MYLIB' OR 'MYLIB' = '')\nAND (JOURNAL_NAME = '' OR '' = '');"
   );
+});
+
+test('formatSql breaks named-argument lists inside CALL statements, indented by paren depth', () => {
+  const sql = "CALL SYSTOOLS.END_JOBS(JOB_NAME_FILTER => 'A', CURRENT_USER_LIST_FILTER => NULLIF('CLARK', ''), END_OPTION => 'IMMEDIATE')";
+  const formatted = formatSql(sql);
+  assert.equal(
+    formatted,
+    "CALL SYSTOOLS.END_JOBS(JOB_NAME_FILTER => 'A',\n    CURRENT_USER_LIST_FILTER => NULLIF('CLARK', ''),\n    END_OPTION => 'IMMEDIATE')"
+  );
+});
+
+test('formatSql does not break commas inside a type declaration like CAST(x AS DECIMAL(21,0))', () => {
+  const sql = "SELECT CAST('1' AS DECIMAL(21,0)) FROM SYSIBM.SYSDUMMY1";
+  const formatted = formatSql(sql);
+  assert.equal(formatted, "SELECT CAST('1' AS DECIMAL(21,0))\nFROM SYSIBM.SYSDUMMY1");
 });
 
 test('formatSql does not break on keywords that appear inside quoted string literals', () => {
